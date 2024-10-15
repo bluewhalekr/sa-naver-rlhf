@@ -7,7 +7,7 @@ readme = "README.md"
 packages = [{include = "sa_naver_rlhf"}]
 
 [tool.poetry.dependencies]
-python = "^3.12"
+python = "^3.11"
 streamlit = "^1.39.0"
 openai = "^1.51.2"
 python-dotenv = "^1.0.1"
