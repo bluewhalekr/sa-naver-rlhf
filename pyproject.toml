@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "sa-naver-rlhf"
+version = "0.1.0"
+description = "Naver RLHF 프로젝트에 대한 SmartAgent 서포트 코드"
+authors = ["mike <mike@aimmo.co.kr>, clid <clid@aimmo.co.kr>, kb <kb@aimmo.co.kr>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+beautifulsoup4 = "^4.12.3"
+selenium = "^4.25.0"
+webdriver-manager = "^4.0.2"
+loguru = "^0.7.2"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
