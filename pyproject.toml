@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "sa-naver-rlhf"
+version = "0.1.0"
+description = ""
+authors = ["mike <xcellentbird@gmail.com>"]
+readme = "README.md"
+packages = [{include = "sa_naver_rlhf"}]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+streamlit = "^1.39.0"
+openai = "^1.51.2"
+python-dotenv = "^1.0.1"
+tiktoken = "^0.8.0"
+pydantic = "^2.9.2"
+jupyter = "^1.1.1"
+watchdog = "^5.0.3"
+setuptools = "^75.1.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
