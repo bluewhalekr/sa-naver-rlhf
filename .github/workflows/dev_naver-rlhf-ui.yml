@@ -29,7 +29,6 @@ jobs:
       - name: Create and start virtual environment
         run: |
           curl -sSL https://install.python-poetry.org | POETRY_VERSION=1.4.2 python -
-          source $(poetry env info --path)/bin/activate
 
       - name: Install dependencies
         run: poetry install
