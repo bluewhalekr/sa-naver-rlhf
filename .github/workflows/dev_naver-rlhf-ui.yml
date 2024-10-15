@@ -31,7 +31,7 @@ jobs:
           curl -sSL https://install.python-poetry.org | POETRY_VERSION=1.4.2 python -
 
       - name: Install dependencies
-        run: poetry install
+        run: poetry install --no-root
 
       # Optional: Add step to run tests here
 
