@@ -29,15 +29,13 @@ jobs:
       - name: Create and start virtual environment
         run: |
           curl -sSL https://install.python-poetry.org | POETRY_VERSION=1.4.2 python -
-          export PATH=$PATH:$HOME/.poetry/bin
 
       - name: Install dependencies
         run: |
           poetry lock --no-update
-          poetry install --no-root --without dev,local
-          poetry env use /home/vsts/work/1/s/.venv/bin/python
+          poetry install --no-root
           poetry export -f requirements.txt --output requirements.txt
-          pip install --target="./.python_packages/lib/site-packages" -r ./requirements.txt
+          pip install -r ./requirements.txt
 
       # Optional: Add step to run tests here
 
