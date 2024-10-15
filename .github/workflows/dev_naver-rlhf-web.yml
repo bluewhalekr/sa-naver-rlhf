@@ -24,11 +24,13 @@ jobs:
 
       - name: Create and start virtual environment
         run: |
-          python -m venv venv
-          source venv/bin/activate
+          curl -sSL https://install.python-poetry.org | POETRY_VERSION=1.4.2 python -
+          poetry lock --no-update
       
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: |
+          poetry export -f requirements.txt --output requirements.txt
+          pip install -r requirements.txt
         
       # Optional: Add step to run tests here (PyTest, Django test suites, etc.)
 
