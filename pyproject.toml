@@ -4,14 +4,22 @@ version = "0.1.0"
 description = "Naver RLHF 프로젝트에 대한 SmartAgent 서포트 코드"
 authors = ["mike <mike@aimmo.co.kr>, clid <clid@aimmo.co.kr>, kb <kb@aimmo.co.kr>"]
 readme = "README.md"
+packages = [{include = "sa_naver_rlhf"}]
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.12"
+streamlit = "^1.39.0"
+openai = "^1.51.2"
+python-dotenv = "^1.0.1"
+tiktoken = "^0.8.0"
+pydantic = "^2.9.2"
+jupyter = "^1.1.1"
+watchdog = "^5.0.3"
+setuptools = "^75.1.0"
 beautifulsoup4 = "^4.12.3"
 selenium = "^4.25.0"
 webdriver-manager = "^4.0.2"
 loguru = "^0.7.2"
-
 
 [build-system]
 requires = ["poetry-core"]
