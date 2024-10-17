@@ -60,6 +60,9 @@ class UserQuestionsAboutImages(BaseModel):
     user_question3: str
     user_question4: str
     user_question5: str
+    user_question6: str
+    user_question7: str
+    user_question8: str
 
 
 class GptResponse(BaseModel):
