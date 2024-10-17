@@ -14,7 +14,7 @@ class Keyword(Base):
     __tablename__ = "keywords"
     id = Column(Integer, primary_key=True)
     keyword = Column(String, unique=True, nullable=False)
-    category = Column(String, unique=True, nullable=False)
+    category = Column(String, unique=False, nullable=False)
 
 
 class ImageURL(Base):
@@ -42,6 +42,7 @@ class ImageSet(Base):
 
     __tablename__ = "image_sets"
     id = Column(Integer, primary_key=True)
+    mappings = relationship("ImageSetMapping", back_populates="image_set")
 
 
 class ImageSetMapping(Base):
@@ -51,10 +52,9 @@ class ImageSetMapping(Base):
     id = Column(Integer, primary_key=True)
     set_id = Column(Integer, ForeignKey("image_sets.id"), nullable=False)
     image_url_id = Column(Integer, ForeignKey("image_urls.id"), nullable=False)
-    order = Column(Integer, CheckConstraint("order BETWEEN 1 AND 3"), nullable=False)
-    image_set = relationship("ImageSet")
+    image_set = relationship("ImageSet", back_populates="mappings")
     image_url = relationship("ImageURL")
-    __table_args__ = (UniqueConstraint("set_id", "order"),)
+    __table_args__ = (UniqueConstraint("set_id", "image_url_id"),)
 
 
 class Question(Base):
