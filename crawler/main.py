@@ -1,12 +1,28 @@
 """FastAPI application for crawling images"""
 
+import sys
 from typing import List
-from fastapi import FastAPI, BackgroundTasks
+from fastapi import FastAPI, Request, BackgroundTasks
+from loguru import logger
 from pydantic import BaseModel
 from services import insert_crawled_data
-from db_schemas import initialize_database
+from db_schemas import initialize_database, reset_database
 
 app = FastAPI()
+
+logger.remove()  # 기본 핸들러 제거
+logger.add(
+    sys.stderr,
+    level="INFO",
+)
+
+
+@app.middleware("http")
+async def logging_middleware(request: Request, call_next):
+    logger.info(f"Request: {request.method} {request.url}")
+    response = await call_next(request)
+    logger.info(f"Response status: {response.status_code}")
+    return response
 
 
 class KeywordsRequest(BaseModel):
@@ -14,6 +30,12 @@ class KeywordsRequest(BaseModel):
 
     category: str
     keywords: List[str]
+
+
+@app.put("/v1/database/reset")
+def reset_database_request():
+    """reset database"""
+    reset_database()
 
 
 @app.post("/v1/keywords")

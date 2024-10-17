@@ -63,10 +63,11 @@ def scroll_page(driver, scroll_pause_time=2.0, num_scrolls=5):
         time.sleep(random.uniform(0.5, 2.5))
 
 
-def crawl_image_urls_by_keyword(keyword, minimum_images=100):
+def crawl_image_urls_by_keyword(category: str, keyword: str, minimum_images=100):
     """키워드로 네이버 이미지 검색 결과를 크롤링하는 함수
 
     Args:
+        category (str): 이미지 카테고리
         keyword (str): 이미지 검색 키워드
         minimum_images (int): 최소 크롤링 이미지 수
     Returns:
@@ -82,7 +83,7 @@ def crawl_image_urls_by_keyword(keyword, minimum_images=100):
     image_urls = []
     trials = 0
     try:
-        url = f"https://search.naver.com/search.naver?where=image&query={keyword}"
+        url = f"https://search.naver.com/search.naver?where=image&query={category}+{keyword}"
         driver.get(url)
 
         # 페이지 로딩 대기
