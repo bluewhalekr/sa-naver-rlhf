@@ -1,7 +1,10 @@
 import random
+import yaml
+from yaml.loader import SafeLoader
 
 import httpx
 import streamlit as st
+import streamlit_authenticator as stauth
 
 from mocks import _tmp_get_image_questions
 from model import ImageQuestions
@@ -23,34 +26,60 @@ def get_image_questions(img_num: int) -> ImageQuestions:
         raise ValueError("Invalid image number")
 
 
-image_num = st.radio("이미지 개수를 선택하세요", ["random", 1, 2, 3], horizontal=True)
+with open('web_configs/auth.yaml') as file:
+    config = yaml.load(file, Loader=SafeLoader)
 
-if st.button("질문 생성"):
-    if image_num == "random":
-        image_num = random.randint(1, 3)
+authenticator = stauth.Authenticate(
+    config['credentials'],
+    config['cookie']['name'],
+    config['cookie']['key'],
+    config['cookie']['expiry_days'],
+)
 
-    if image_num:
-        image_questions = get_image_questions(image_num)
+sb = st.sidebar
+with sb:
+    authenticator.login()
 
-        # Display images
-        st.markdown("---")
-        st.markdown("### 이미지")
+authentication_status = st.session_state['authentication_status']
+if authentication_status:
+    with sb:
+        authenticator.logout()
 
-        for image_col, image_info in zip(st.columns(image_num, vertical_alignment="bottom"), image_questions.image_infos):
-            image_data = open_image_url(image_info.image_url)
+    image_num = st.radio("이미지 개수를 선택하세요", ["random", 1, 2, 3], horizontal=True)
 
-            image_col.image(image_data)
+    if st.button("질문 생성"):
+        if image_num == "random":
+            image_num = random.randint(1, 3)
 
-            image_col.write("이미지 URL:")
-            image_col.code(image_info.image_url, language="html")
+        if image_num:
+            image_questions = get_image_questions(image_num)
 
-            image_col.write("검색어:")
-            image_col.code(image_info.search_word, language="html")
+            # Display images
+            st.markdown("---")
+            st.markdown("### 이미지")
 
-        # Display questions
-        st.markdown("---")
-        st.markdown("### 질문")
+            for image_col, image_info in zip(st.columns(image_num, vertical_alignment="bottom"),
+                                             image_questions.image_infos):
+                image_data = open_image_url(image_info.image_url)
 
-        for question in image_questions.questions:
-            with st.chat_message("user"):
-                st.code(question, language="html")
+                image_col.image(image_data)
+
+                image_col.write("이미지 URL:")
+                image_col.code(image_info.image_url, language="html")
+
+                image_col.write("검색어:")
+                image_col.code(image_info.search_word, language="html")
+
+            # Display questions
+            st.markdown("---")
+            st.markdown("### 질문")
+
+            for question in image_questions.questions:
+                with st.chat_message("user"):
+                    st.code(question, language="html")
+
+elif authentication_status is False:
+    st.error('Username/password is incorrect')
+
+elif authentication_status is None:
+    st.warning('Please enter your username and password')
