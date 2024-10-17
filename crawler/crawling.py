@@ -101,7 +101,7 @@ def crawl_image_urls_by_keyword(keyword, minimum_images=100):
                 img["src"] for img in images if "src" in img.attrs and img["src"].startswith(TARGET_URL_PREFIX)
             ]
             trials += 1
-            logger.info(f"Trial {trials}: Found {len(image_urls)} images")
+            logger.info(f"Crawling {keyword} image url: Trial {trials}: Found {len(image_urls)} images")
         return image_urls
     finally:
         driver.quit()
