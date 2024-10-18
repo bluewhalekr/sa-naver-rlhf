@@ -3,11 +3,9 @@
 import sys
 from fastapi import FastAPI, Request, BackgroundTasks, Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from apscheduler.triggers.interval import IntervalTrigger
 from starlette.status import HTTP_403_FORBIDDEN
 from loguru import logger
-from services import do_create_keywords_images, do_create_questions, do_get_questions, check_and_create_questions
+from services import do_create_keywords_images, do_create_questions, do_get_questions, do_create_batch_questions
 from db_config import db_manager
 from config import SCHEDULER_INTERVAL
 from models import KeywordsRequest
@@ -17,7 +15,6 @@ logger.add(sys.stderr, level="INFO")
 
 app = FastAPI()
 security = HTTPBearer()
-scheduler = AsyncIOScheduler()
 
 
 def verify_user_token(token: str) -> bool:
@@ -83,6 +80,13 @@ async def create_questions(background_tasks: BackgroundTasks, token: str = Depen
     return {"message": "create_questionsstarted in the background"}
 
 
+@app.post("/v1/batch/questions")
+async def create_batch_questions(background_tasks: BackgroundTasks, token: str = Depends(verify_admin_user)):
+    """Create questions"""
+    background_tasks.add_task(do_create_batch_questions)
+    return {"message": "create_questionsstarted in the background"}
+
+
 @app.get("/v1/questions")
 async def get_questions(token: str = Depends(verify_user)):
     """Get questions"""
@@ -93,6 +97,3 @@ async def get_questions(token: str = Depends(verify_user)):
 @app.on_event("startup")
 async def startup_event():
     await db_manager.initialize_database()
-    # SCHEDULER_INTERVAL 간격으로 check_and_create_questions 함수 실행 예약
-    scheduler.add_job(check_and_create_questions, IntervalTrigger(seconds=SCHEDULER_INTERVAL))
-    scheduler.start()
