@@ -12,9 +12,10 @@ RUN pip install uv && \
     webdriver-manager==4.0.2 \
     loguru==0.7.2 \
     sqlalchemy==2.0.36 \
-    psycopg2-binary==2.9.9 \
     fastapi==0.115.2 \
-    uvicorn==0.32.0 
+    uvicorn==0.32.0 \
+    asyncpg==0.29.0 \
+    greenlet==3.1.1
 
 COPY . .    
 
