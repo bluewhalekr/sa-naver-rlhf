@@ -221,7 +221,12 @@ async def fetch_unmapped_image_sets(session: AsyncSession, batch_size: int):
 
             used_image_set_ids = select(Question.image_set_id).distinct()
 
-            unmapped_image_sets = select(ImageSet.id).where(~ImageSet.id.in_(used_image_set_ids)).limit(batch_size)
+            unmapped_image_sets = (
+                select(ImageSet.id)
+                .where(~ImageSet.id.in_(used_image_set_ids))
+                .order_by(func.random())
+                .limit(batch_size)
+            )
 
             result = await session.execute(unmapped_image_sets)
             image_set_ids = result.scalars().all()
