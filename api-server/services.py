@@ -8,7 +8,7 @@ import time
 from typing import List
 from loguru import logger
 from tqdm.asyncio import tqdm
-from sqlalchemy import select, func, update, delete
+from sqlalchemy import select, func, update, and_
 from sqlalchemy.orm import selectinload
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -48,6 +48,8 @@ async def insert_keywords_and_images(
     # category insert
 
     search_words = [category] + keywords
+    for word in keywords:
+        search_words.append(f"{category} {word}")
     logger.info(f"Inserting {len(keywords)} keywords and images for category '{category}'")
     # keyword insert
     for kw in tqdm(search_words):
@@ -221,7 +223,12 @@ async def fetch_unmapped_image_sets(session: AsyncSession, batch_size: int):
 
             used_image_set_ids = select(Question.image_set_id).distinct()
 
-            unmapped_image_sets = select(ImageSet.id).where(~ImageSet.id.in_(used_image_set_ids)).limit(batch_size)
+            unmapped_image_sets = (
+                select(ImageSet.id)
+                .where(~ImageSet.id.in_(used_image_set_ids))
+                .order_by(func.random())
+                .limit(batch_size)
+            )
 
             result = await session.execute(unmapped_image_sets)
             image_set_ids = result.scalars().all()
@@ -258,12 +265,12 @@ async def fetch_unmapped_image_sets(session: AsyncSession, batch_size: int):
         raise
 
 
-async def do_get_questions(token: str = "kb"):
+async def do_get_questions(image_count: int, token: str = "kb"):
     session_factory = db_manager.get_session_factory()
     try:
         async with async_session_scope(session_factory) as session:
             try:
-                result = await get_unused_image_set_info(session, token)
+                result = await get_unused_image_set_info(session, image_count, token)
                 logger.info(result)
                 if result:
                     return result
@@ -279,12 +286,40 @@ async def do_get_questions(token: str = "kb"):
         raise
 
 
-async def get_unused_image_set_info(session: AsyncSession, token: str = "kb"):
+async def get_unused_image_set_info(session: AsyncSession, image_count: int = 0, token: str = "kb"):
+    """사용되지 않은 이미지 세트 정보를 반환하는 함수
+
+    Args:
+        session (AsyncSession): SQLAlchemy 비동기 세션 객체
+        image_count (int): 이미지 수
+        token (str): 사용자 토큰
+
+    Returns:
+        dict: 이미지 세트 정보
+    """
     async with session.begin():
         try:
             # 1. used_by가 없는 Question 레코드 하나를 무작위로 선택
+            if image_count not in [0, 1, 2, 3]:
+                raise ValueError("image_count must be 1, 2, or 3, 0")
+
+            if image_count == 0:
+                image_count = random.choice([1, 2, 3])
+            # 서브쿼리: 각 이미지 세트의 이미지 수 계산
+
+            image_count_subq = (
+                select(ImageSetMapping.set_id, func.count().label("image_count"))
+                .group_by(ImageSetMapping.set_id)
+                .subquery()
+            )
+
             subquery = (
-                select(Question.id).where(Question.used_by == None).order_by(func.random()).limit(1).scalar_subquery()
+                select(Question.id)
+                .join(image_count_subq, Question.image_set_id == image_count_subq.c.set_id)
+                .where(and_(Question.used_by == None, image_count_subq.c.image_count == image_count))
+                .order_by(func.random())
+                .limit(1)
+                .scalar_subquery()
             )
 
             # 선택된 question을 업데이트하고 반환

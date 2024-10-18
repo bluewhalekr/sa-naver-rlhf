@@ -83,6 +83,7 @@ async def crawl_image_urls_by_keyword(keyword: str, minimum_images=100):
     image_urls = []
     trials = 0
     try:
+        keyword = keyword.replace(" ", "+")
         url = f"https://search.naver.com/search.naver?where=image&query={keyword}"
         driver.get(url)
 

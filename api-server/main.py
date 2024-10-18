@@ -88,9 +88,9 @@ async def create_batch_questions(background_tasks: BackgroundTasks, token: str =
 
 
 @app.get("/v1/questions")
-async def get_questions(token: str = Depends(verify_user)):
+async def get_questions(image_count: int = 0, token: str = Depends(verify_user)):
     """Get questions"""
-    result = await do_get_questions(token)
+    result = await do_get_questions(image_count, token)
     return result
 
 
