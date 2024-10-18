@@ -1,31 +1,13 @@
 import os
-import random
 
-import httpx
 import streamlit as st
 import streamlit_authenticator as stauth
 import yaml
 from yaml.loader import SafeLoader
 
-from mocks import _tmp_get_image_questions
-
 WEB_ROOT = os.path.abspath(os.path.dirname(__file__))
 AUTH_CONFIG_PATH = os.path.join(WEB_ROOT, 'web_configs', 'auth.yaml')
 st.set_page_config(page_title="Question Gen", page_icon="🤖", layout="wide")
-
-
-def open_image_url(image_url) -> bytes:
-    response = httpx.get(image_url)
-
-    return response.content
-
-
-def get_image_questions(img_num: int):
-    if 1 <= img_num <= 3:
-        return _tmp_get_image_questions(img_num)
-
-    else:
-        raise ValueError("Invalid image number")
 
 
 with open(AUTH_CONFIG_PATH) as file:
@@ -38,50 +20,45 @@ authenticator = stauth.Authenticate(
     config['cookie']['expiry_days'],
 )
 
-sb = st.sidebar
-with sb:
-    authenticator.login()
+authenticator.login(location="unrendered")
 
-authentication_status = st.session_state['authentication_status']
-if authentication_status:
-    with sb:
-        authenticator.logout()
 
-    image_num = st.radio("이미지 개수를 선택하세요", ["random", 1, 2, 3], horizontal=True)
+def login():
+    if not st.session_state['authentication_status']:
+        authenticator.login()
 
-    if st.button("질문 생성"):
-        if image_num == "random":
-            image_num = random.randint(1, 3)
 
-        if image_num:
-            image_questions = get_image_questions(image_num)
+def logout():
+    if st.session_state['authentication_status']:
+        authenticator.authentication_controller.logout()
+        authenticator.cookie_controller.delete_cookie()
 
-            # Display images
-            st.markdown("---")
-            st.markdown("### 이미지")
 
-            for image_col, image_info in zip(st.columns(image_num, vertical_alignment="bottom"),
-                                             image_questions.image_infos):
-                image_data = open_image_url(image_info.image_url)
+def register_user():
+    if st.session_state['authentication_status'] and st.session_state['username'] == 'admin':
+        authenticator.register_user()
 
-                image_col.image(image_data)
 
-                image_col.write("이미지 URL:")
-                image_col.code(image_info.image_url, language="html")
+# Page definitions
+login_page = st.Page(login, title="Log in", icon=":material/login:")
+logout_page = st.Page(logout, title="Log out", icon=":material/logout:")
 
-                image_col.write("검색어:")
-                image_col.code(image_info.search_word, language="html")
+register_user_page = st.Page(register_user, title="Register user", icon=":material/security:")
 
-            # Display questions
-            st.markdown("---")
-            st.markdown("### 질문")
+q_gen_page = st.Page("question/generator.py", title="Question maker", icon=":material/chat:")
 
-            for question in image_questions.questions:
-                with st.chat_message("user"):
-                    st.code(question, language="html")
+# Page routing
+if st.session_state['authentication_status']:
+    page_dict = {"Question": [q_gen_page]}
 
-elif authentication_status is False:
-    st.error('Username/password is incorrect')
+    if st.session_state['username'] == 'admin':
+        page_dict["Admin"] = [register_user_page]
 
-elif authentication_status is None:
-    st.warning('Please enter your username and password')
+    page_dict["Account"] = [logout_page]
+    pg = st.navigation(page_dict)
+
+else:
+    pg = st.navigation([st.Page(login, title="Log in", icon=":material/login:")])
+
+pg.run()
+
