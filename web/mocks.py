@@ -1,4 +1,16 @@
-from model import ImageQuestions, ImageInfo
+from typing import List
+
+from pydantic import BaseModel
+
+
+class ImageInfo(BaseModel):
+    search_word: str
+    image_url: str
+
+
+class ImageQuestions(BaseModel):
+    image_infos: List[ImageInfo]
+    questions: List[str]
 
 
 def _tmp_get_image_questions(img_num: int) -> ImageQuestions:
