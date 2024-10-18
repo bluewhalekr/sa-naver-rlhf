@@ -3,11 +3,11 @@ credentials:
     admin:
       email: jsmith@gmail.com
       name: Admin
-      password: admin # To be replaced with hashed password
+      password: PjTbqakj09RMrnx # To be replaced with hashed password
     labelers:
       email: rbriggs@gmail.com
       name: Labelers
-      password: labelers # To be replaced with hashed password
+      password: T5UInMP8w8IZYjc # To be replaced with hashed password
 cookie:
   expiry_days: 30
   key: random_signature_key # Must be string
