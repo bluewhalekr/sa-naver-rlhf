@@ -9,7 +9,7 @@ on:
     branches:
       - develop
     paths-ignore:
-      - 'crawler/**'
+      - 'api-server/**'
       - 'word/**'
   workflow_dispatch:
 
