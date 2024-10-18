@@ -63,7 +63,7 @@ def scroll_page(driver, scroll_pause_time=2.0, num_scrolls=5):
         time.sleep(random.uniform(0.5, 2.5))
 
 
-def crawl_image_urls_by_keyword(keyword: str, minimum_images=100):
+async def crawl_image_urls_by_keyword(keyword: str, minimum_images=100):
     """키워드로 네이버 이미지 검색 결과를 크롤링하는 함수
 
     Args:
