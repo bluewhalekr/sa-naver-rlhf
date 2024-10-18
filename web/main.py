@@ -1,9 +1,13 @@
 import os
+import re
 
 import streamlit as st
 import streamlit_authenticator as stauth
 import yaml
+from dotenv import load_dotenv
 from yaml.loader import SafeLoader
+
+load_dotenv()
 
 WEB_ROOT = os.path.abspath(os.path.dirname(__file__))
 AUTH_CONFIG_PATH = os.path.join(WEB_ROOT, 'web_configs', 'auth.yaml')
@@ -13,8 +17,19 @@ st.set_page_config(page_title="Question Gen", page_icon="🤖", layout="wide")
 with open(AUTH_CONFIG_PATH) as file:
     config = yaml.load(file, Loader=SafeLoader)
 
+
+# set admin auth
+config['credentials']['usernames']['admin'] = {
+    'email': 'admin@admin.com',
+    'name': 'Admin',
+    'password': os.getenv("ADMIN_PASSWORD"),
+}
+with open(AUTH_CONFIG_PATH, 'w') as file:
+    yaml.dump(config, file)
+
+
 authenticator = stauth.Authenticate(
-    config['credentials'],
+    AUTH_CONFIG_PATH,
     config['cookie']['name'],
     config['cookie']['key'],
     config['cookie']['expiry_days'],
@@ -24,8 +39,12 @@ authenticator.login(location="unrendered")
 
 
 def login():
-    if not st.session_state['authentication_status']:
+    if st.session_state['authentication_status'] is None:
         authenticator.login()
+
+    elif not st.session_state['authentication_status']:
+        authenticator.login()
+        st.warning("wrong username or password")
 
 
 def logout():

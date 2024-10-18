@@ -1,14 +1,24 @@
+cookie:
+  expiry_days: 30
+  key: random_signature_key
+  name: random_cookie_name
 credentials:
   usernames:
     admin:
       email: jsmith@gmail.com
+      failed_login_attempts: 0
+      logged_in: false
       name: Admin
-      password: PjTbqakj09RMrnx # To be replaced with hashed password
+      password: $2b$12$C/iO5a3iTEcSZ/gX/UOMUOXhiH1/koe9GEYyQfz8n5ERHqOEMydBC
+    john1:
+      email: abcd@gogo.com
+      first_name: John
+      last_name: Doe
+      logged_in: false
+      password: $2b$12$R60E9xJYDLCnDm/C.yCX.e8/i3LKPWO.A2BXvkhEddzn1WUBLzpfK
+      password_hint: dont know
+      roles: null
     labelers:
       email: rbriggs@gmail.com
       name: Labelers
-      password: T5UInMP8w8IZYjc # To be replaced with hashed password
-cookie:
-  expiry_days: 30
-  key: random_signature_key # Must be string
-  name: random_cookie_name
+      password: $2b$12$4mIY0YBRdgW.P7T/1HWBcOsVIyfgamxlVlacPEa62/1ZKe0L5OR0y

@@ -29,6 +29,7 @@ jobs:
         run: |
           curl -sSL https://install.python-poetry.org | POETRY_VERSION=1.8.4 python -
           poetry lock --no-update
+          echo "ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}" >> web/.env
       
       - name: Install dependencies
         run: |
@@ -38,7 +39,7 @@ jobs:
       # Optional: Add step to run tests here (PyTest, Django test suites, etc.)
 
       - name: Zip artifact for deployment
-        run: zip release.zip ./* -r -x .git/\* .github/\* .vscode/\* .gitignore .env api-server/\* word/\*
+        run: zip release.zip ./* -r -x .git/\* .github/\* .vscode/\* .gitignore api-server/\* word/\*
 
       - name: Upload artifact for deployment jobs
         uses: actions/upload-artifact@v4
