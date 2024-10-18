@@ -8,6 +8,8 @@ on:
   push:
     branches:
       - develop
+    paths-ignore:
+      - 'crawler/**'
   workflow_dispatch:
 
 jobs:
