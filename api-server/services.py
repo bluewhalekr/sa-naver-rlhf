@@ -339,7 +339,7 @@ def get_keyword_from_file(file_path: str):
     return {"category": data["query"], "keywords": all_keywords}
 
 
-async def check_and_create_questions():
+async def do_create_batch_questions():
     """
     Question 테이블을 확인하고 필요한 경우 질문을 생성하는 함수
       - QUESTION_COUNT_BUFFER 이하로 남아있을 경우 질문 생성
