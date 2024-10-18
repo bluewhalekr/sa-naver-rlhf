@@ -10,6 +10,7 @@ on:
       - develop
     paths-ignore:
       - 'crawler/**'
+      - 'word/**'
   workflow_dispatch:
 
 jobs:
