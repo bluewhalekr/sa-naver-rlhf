@@ -3,6 +3,8 @@ FROM python:3.8.13
 ARG DB_PASSWORD
 
 ENV DB_PASSWORD $DB_PASSWORD
+ENV OPENAI_API_KEY $OPENAI_API_KEY
+ENV DB_PASSWORD $DB_PASSWORD
 
 WORKDIR /app
 
@@ -15,7 +17,9 @@ RUN pip install uv && \
     fastapi==0.115.2 \
     uvicorn==0.32.0 \
     asyncpg==0.29.0 \
-    greenlet==3.1.1
+    greenlet==3.1.1 \
+    openai==1.51.2 \
+    tqdm==4.62.3 
 
 COPY . .    
 

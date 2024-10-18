@@ -1,12 +1,14 @@
 """ 크롤링한 데이터를 데이터베이스에 삽입하는 서비스 모듈 """
 
 import asyncio
+import json
 from concurrent.futures import ThreadPoolExecutor
 import random
+import time
 from typing import List
 from loguru import logger
 from tqdm import tqdm
-from sqlalchemy import select, func, and_, update
+from sqlalchemy import select, func, update, delete
 from sqlalchemy.orm import Session, selectinload
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -41,19 +43,24 @@ def insert_keywords_and_images(session: Session, category: str, keywords: List[s
     Returns:
         dict: 키워드 이름을 키로, 키워드 객체를 값으로 갖는 딕셔너리
     """
-    keyword_objects = {}
+    # category insert
 
+    search_word = []
+    search_word.append(category)
     for kw in keywords:
+        search_word.append(kw)
+
+    # keyword insert
+    for kw in search_word:
         # 키워드 객체 생성 또는 조회
         keyword_obj = session.query(Keyword).filter_by(keyword=kw).first()
         if not keyword_obj:
             keyword_obj = Keyword(keyword=kw, category=category)
             session.add(keyword_obj)
             session.flush()
-        keyword_objects[kw] = keyword_obj
 
         # 이미지 URL 크롤링
-        image_urls = crawl_image_urls_by_keyword(category, kw, minimum_images)
+        image_urls = crawl_image_urls_by_keyword(kw, minimum_images)
 
         # 이미지 URL 중복 제거
         unique_image_urls = set(image_urls)
@@ -71,7 +78,6 @@ def insert_keywords_and_images(session: Session, category: str, keywords: List[s
 
     session.commit()
     logger.info(f"Inserted {len(keywords)} keywords and images")
-    return keyword_objects
 
 
 async def create_unique_image_set(session: AsyncSession, category: str):
@@ -145,7 +151,7 @@ async def do_create_keywords_images(category: str, keywords: List, minimum_image
     """
     session_factory = db_manager.get_session_factory()
     async with async_session_scope(session_factory) as session:
-        # insert_keywords_and_images(session, category, keywords, minimum_images)
+        insert_keywords_and_images(session, category, keywords, minimum_images)
         await create_unique_image_set(session, category)
 
 
@@ -167,12 +173,17 @@ async def do_create_questions(batch_size: int = 5):
                     try:
                         logger.info(f"Generating questions for {len(image_set['urls'])} images")
                         questions = await async_question_generate(image_set["urls"])
-                        new_question = Question(image_set_id=image_set["image_set"], questions=questions.questions)
+                        new_question = Question(
+                            image_set_id=image_set["image_set"],
+                            questions=questions.questions,
+                            cost=questions.total_price,
+                            created_dt=time.time(),
+                        )
                         logger.info(f"Generated questions for image set {image_set['image_set']}: {questions}")
                         session.add(new_question)
                     except Exception as e:  # pylint: disable=broad-except
                         logger.error(f"Error processing image set {image_set['image_set']}: {str(e)}")
-                        # 선택: 이 이미지 세트의 처리를 건너뛰고 다음으로 진행
+                        # TODO: 이미지 세트의 처리를 건너뛰고 다음으로 진행
                         continue
 
                 await session.commit()
@@ -272,7 +283,12 @@ async def get_unused_image_set_info(session: AsyncSession, token: str = "kb"):
             )
 
             # 선택된 question을 업데이트하고 반환
-            update_stmt = update(Question).where(Question.id == subquery).values(used_by=token).returning(Question)
+            update_stmt = (
+                update(Question)
+                .where(Question.id == subquery)
+                .values(used_by=token, updated_dt=time.time())
+                .returning(Question)
+            )
             result = await session.execute(update_stmt)
             unused_question = result.scalar_one_or_none()
 
@@ -303,3 +319,16 @@ async def get_unused_image_set_info(session: AsyncSession, token: str = "kb"):
         except SQLAlchemyError as e:
             await session.rollback()
             raise e
+
+
+def get_keyword_from_file(file_path: str):
+    # JSON 파일 읽기
+    with open(file_path, "r", encoding="utf-8") as file:
+        data = json.load(file)
+
+    all_keywords = []
+    for category in ["1", "2", "3"]:
+        if category in data:
+            all_keywords.extend(data[category])
+
+    return {"category": data["query"], "keywords": all_keywords}

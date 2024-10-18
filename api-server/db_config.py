@@ -6,6 +6,7 @@ from sqlalchemy import Column, Integer, String, ForeignKey, JSON, UniqueConstrai
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
+from sqlalchemy.util import update_copy
 from config import CONNECT_STRING
 
 Base = declarative_base()
@@ -79,7 +80,10 @@ class Question(Base):
     id = Column(Integer, primary_key=True)
     image_set_id = Column(Integer, ForeignKey("image_sets.id"), nullable=False)
     questions = Column(JSON, nullable=False)  # List of questions stored as JSON
+    cost = Column(Float, nullable=True)
     image_set = relationship("ImageSet")
+    created_dt = Column(Float, nullable=False)
+    updated_dt = Column(Float, nullable=False)
     used_by = Column(String, nullable=True)
 
     def __repr__(self):

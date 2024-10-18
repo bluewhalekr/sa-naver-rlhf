@@ -17,11 +17,13 @@ security = HTTPBearer()
 
 
 def verify_user_token(token: str) -> bool:
+    """Verify user token"""
     # TODO need to implement
-    return token == "user1"
+    return token == "smartagent160321!!"
 
 
 def verify_admin_token(token: str) -> bool:
+    """Verify admin token"""
     return token == "smartagent160321!!"
 
 
@@ -33,9 +35,10 @@ def verify_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
         str: 사용자 토큰
     """
     token = credentials.credentials
-    if not verify_user_token(token):
-        raise HTTPException(status_code=HTTP_403_FORBIDDEN, detail="Invalid token")
-    return token  # 또는 토큰에서 추출한 사용자 정보를 반환할 수 있습니다.
+    if verify_user_token(token) or verify_admin_token(token):
+        return token
+
+    raise HTTPException(status_code=HTTP_403_FORBIDDEN, detail="Invalid token")
 
 
 def verify_admin_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
