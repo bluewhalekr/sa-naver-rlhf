@@ -19,8 +19,9 @@ RUN pip install uv && \
     asyncpg==0.29.0 \
     greenlet==3.1.1 \
     openai==1.51.2 \
-    tqdm==4.62.3 
+    tqdm==4.62.3 \
+    apscheduler==3.10.4
 
 COPY . .    
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "80", "--workers", "1"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "80", "--workers", "3"]

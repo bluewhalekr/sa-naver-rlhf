@@ -5,8 +5,9 @@ from fastapi import FastAPI, Request, BackgroundTasks, Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from starlette.status import HTTP_403_FORBIDDEN
 from loguru import logger
-from services import do_create_keywords_images, do_create_questions, do_get_questions
+from services import do_create_keywords_images, do_create_questions, do_get_questions, do_create_batch_questions
 from db_config import db_manager
+from config import SCHEDULER_INTERVAL
 from models import KeywordsRequest
 
 logger.remove()  # 기본 핸들러 제거
@@ -76,6 +77,13 @@ async def create_keywords_images(
 async def create_questions(background_tasks: BackgroundTasks, token: str = Depends(verify_admin_user)):
     """Create questions"""
     background_tasks.add_task(do_create_questions)
+    return {"message": "create_questionsstarted in the background"}
+
+
+@app.post("/v1/batch/questions")
+async def create_batch_questions(background_tasks: BackgroundTasks, token: str = Depends(verify_admin_user)):
+    """Create questions"""
+    background_tasks.add_task(do_create_batch_questions)
     return {"message": "create_questionsstarted in the background"}
 
 

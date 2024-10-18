@@ -7,9 +7,9 @@ import random
 import time
 from typing import List
 from loguru import logger
-from tqdm import tqdm
+from tqdm.asyncio import tqdm
 from sqlalchemy import select, func, update, delete
-from sqlalchemy.orm import Session, selectinload
+from sqlalchemy.orm import selectinload
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from crawling import crawl_image_urls_by_keyword
@@ -24,18 +24,20 @@ from db_config import (
     Question,
 )
 from question_generator import q_generator, GptResponse
-
+from config import QUESTION_COUNT_BUFFER
 
 # 전역 ThreadPoolExecutor 생성
 thread_pool = ThreadPoolExecutor()
 
 
-def insert_keywords_and_images(session: Session, category: str, keywords: List[str], minimum_images: int = 100) -> dict:
+async def insert_keywords_and_images(
+    session: AsyncSession, category: str, keywords: List[str], minimum_images: int = 100
+):
     """
     주어진 키워드 리스트에 대해 이미지를 크롤링하고 데이터베이스에 삽입합니다.
 
     Args:
-        session (Session): SQLAlchemy 세션 객체
+        session (AsyncSession): SQLAlchemy 비동기 세션 객체
         category (str): 카테고리 이름
         keywords (list): 키워드 리스트
         minimum_images (int): 최소 이미지 수
@@ -45,38 +47,41 @@ def insert_keywords_and_images(session: Session, category: str, keywords: List[s
     """
     # category insert
 
-    search_word = []
-    search_word.append(category)
-    for kw in keywords:
-        search_word.append(kw)
-
+    search_words = [category] + keywords
+    logger.info(f"Inserting {len(keywords)} keywords and images for category '{category}'")
     # keyword insert
-    for kw in search_word:
+    for kw in tqdm(search_words):
         # 키워드 객체 생성 또는 조회
-        keyword_obj = session.query(Keyword).filter_by(keyword=kw).first()
+        stmt = select(Keyword).where(Keyword.keyword == kw)
+        result = await session.execute(stmt)
+        keyword_obj = result.scalar_one_or_none()
         if not keyword_obj:
             keyword_obj = Keyword(keyword=kw, category=category)
             session.add(keyword_obj)
-            session.flush()
+            await session.flush()
 
         # 이미지 URL 크롤링
-        image_urls = crawl_image_urls_by_keyword(kw, minimum_images)
+        image_urls = await crawl_image_urls_by_keyword(kw, minimum_images)
 
         # 이미지 URL 중복 제거
         unique_image_urls = set(image_urls)
-        existing_urls = set(
-            url for url, in session.query(ImageURL.url).filter(ImageURL.url.in_(unique_image_urls)).all()
-        )
+
+        # 기존 URL 조회
+        stmt = select(ImageURL.url).where(ImageURL.url.in_(unique_image_urls))
+        result = await session.execute(stmt)
+        existing_urls = set(row[0] for row in result)
+
         new_urls = [url for url in unique_image_urls if url not in existing_urls]
 
         for url in tqdm(new_urls):
             image_url_obj = ImageURL(url=url)
             session.add(image_url_obj)
-            session.flush()  # image_url_obj.id 사용하기 위해 flush
+            await session.flush()  # image_url_obj.id 사용하기 위해 flush
+
             mapping = KeywordImageMapping(keyword_id=keyword_obj.id, image_url_id=image_url_obj.id)
             session.add(mapping)
 
-    session.commit()
+    await session.commit()
     logger.info(f"Inserted {len(keywords)} keywords and images")
 
 
@@ -151,7 +156,7 @@ async def do_create_keywords_images(category: str, keywords: List, minimum_image
     """
     session_factory = db_manager.get_session_factory()
     async with async_session_scope(session_factory) as session:
-        insert_keywords_and_images(session, category, keywords, minimum_images)
+        await insert_keywords_and_images(session, category, keywords, minimum_images)
         await create_unique_image_set(session, category)
 
 
@@ -332,3 +337,22 @@ def get_keyword_from_file(file_path: str):
             all_keywords.extend(data[category])
 
     return {"category": data["query"], "keywords": all_keywords}
+
+
+async def do_create_batch_questions():
+    """
+    Question 테이블을 확인하고 필요한 경우 질문을 생성하는 함수
+      - QUESTION_COUNT_BUFFER 이하로 남아있을 경우 질문 생성
+    """
+    session_factory = db_manager.get_session_factory()
+    async with async_session_scope(session_factory) as session:
+        # used_by가 비어있는 질문의 수를 카운트
+        query = select(func.count()).select_from(Question).where(Question.used_by.is_(None))
+        result = await session.execute(query)
+        unused_count = result.scalar()
+
+        if unused_count <= QUESTION_COUNT_BUFFER:
+            logger.warning(f"Creating questions! Current unused count: {unused_count}")
+            await do_create_questions()
+        else:
+            print(f"Skipping question creation! Current unused count: {unused_count}. Good!")
