@@ -1,14 +1,16 @@
+import os
 import random
-import yaml
-from yaml.loader import SafeLoader
 
 import httpx
 import streamlit as st
 import streamlit_authenticator as stauth
+import yaml
+from yaml.loader import SafeLoader
 
 from mocks import _tmp_get_image_questions
-from model import ImageQuestions
 
+WEB_ROOT = os.path.abspath(os.path.dirname(__file__))
+AUTH_CONFIG_PATH = os.path.join(WEB_ROOT, 'web_configs', 'auth.yaml')
 st.set_page_config(page_title="Question Gen", page_icon="🤖", layout="wide")
 
 
@@ -18,7 +20,7 @@ def open_image_url(image_url) -> bytes:
     return response.content
 
 
-def get_image_questions(img_num: int) -> ImageQuestions:
+def get_image_questions(img_num: int):
     if 1 <= img_num <= 3:
         return _tmp_get_image_questions(img_num)
 
@@ -26,7 +28,7 @@ def get_image_questions(img_num: int) -> ImageQuestions:
         raise ValueError("Invalid image number")
 
 
-with open('web_configs/auth.yaml') as file:
+with open(AUTH_CONFIG_PATH) as file:
     config = yaml.load(file, Loader=SafeLoader)
 
 authenticator = stauth.Authenticate(
