@@ -6,7 +6,6 @@ from sqlalchemy import Column, Integer, String, ForeignKey, JSON, UniqueConstrai
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
-from sqlalchemy.util import update_copy
 from config import CONNECT_STRING
 
 Base = declarative_base()

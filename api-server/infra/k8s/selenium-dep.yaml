@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: selenium-chrome
+  namespace: naver-rlhf
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: selenium-chrome
+  template:
+    metadata:
+      labels:
+        app: selenium-chrome
+    spec:
+      containers:
+      - name: selenium-chrome
+        image: selenium/standalone-chrome:latest
+        ports:
+        - containerPort: 4444
+        - containerPort: 7900
+        resources:
+          limits:
+            memory: 2Gi
+          requests:
+            memory: 1Gi
+        volumeMounts:
+        - mountPath: /dev/shm
+          name: dshm
+      volumes:
+      - name: dshm
+        emptyDir:
+          medium: Memory
+          sizeLimit: 2Gi
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: selenium-chrome-service
+  namespace: naver-rlhf
+spec:
+  selector:
+    app: selenium-chrome
+  type: NodePort
+  ports:
+    - port: 4444
+      targetPort: 4444
+      name: selenium
+    - port: 7900
+      targetPort: 7900
+      name: novnc
