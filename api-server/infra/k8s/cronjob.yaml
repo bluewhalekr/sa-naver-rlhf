@@ -1,0 +1,23 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: curl-questions-api
+  namespace: naver-rlhf
+spec:
+  schedule: "*/5 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: curl
+            image: curlimages/curl:7.81.0
+            command:
+            - /bin/sh
+            - -c
+            - >
+              curl -i -X POST 
+              -H "Content-Type:application/json" 
+              -H "Authorization:Bearer smartagent160321!!" 
+              'http://10.10.5.13:32001/v1/batch/questions'
+          restartPolicy: OnFailure

@@ -5,7 +5,7 @@ import json
 from concurrent.futures import ThreadPoolExecutor
 import random
 import time
-from typing import List
+from typing import List, Set
 from loguru import logger
 from tqdm.asyncio import tqdm
 from sqlalchemy import select, func, update, and_
@@ -24,67 +24,107 @@ from db_config import (
     Question,
 )
 from question_generator import q_generator, GptResponse
-from config import QUESTION_COUNT_BUFFER
+from config import QUESTION_COUNT_BUFFER, CRAWLING_IMAGE_BATCH_SIZE
 
 # 전역 ThreadPoolExecutor 생성
 thread_pool = ThreadPoolExecutor()
 
 
 async def insert_keywords_and_images(
-    session: AsyncSession, category: str, keywords: List[str], minimum_images: int = 100
-):
+    session: AsyncSession, category: str, keywords: List[str], minimum_images: int
+) -> None:
     """
     주어진 키워드 리스트에 대해 이미지를 크롤링하고 데이터베이스에 삽입합니다.
 
     Args:
-        session (AsyncSession): SQLAlchemy 비동기 세션 객체
-        category (str): 카테고리 이름
-        keywords (list): 키워드 리스트
-        minimum_images (int): 최소 이미지 수
+        session (AsyncSession): SQLAlchemy 비동기 세션 객체.
+        category (str): 카테고리 이름.
+        keywords (List[str]): 키워드 리스트.
+        minimum_images (int, optional): 각 키워드당 크롤링할 최소 이미지 수. 기본값은 100.
+    """
+    search_words = generate_search_words(category, keywords)
+    logger.info(f"Inserting {len(keywords)} keywords and images for category '{category}'")
+
+    async with session.begin():
+        for word in tqdm(search_words, desc="Processing keywords"):
+            keyword_obj = await get_or_create_keyword(session, word, category)
+            image_urls = await crawl_image_urls_by_keyword(word, minimum_images)
+            await process_image_urls(session, keyword_obj, image_urls)
+
+    logger.info(f"Inserted {len(keywords)} keywords and images")
+
+
+def generate_search_words(category: str, keywords: List[str]) -> List[str]:
+    """
+    카테고리와 키워드를 조합하여 검색어 리스트를 생성합니다.
+
+    Args:
+        category (str): 카테고리 이름.
+        keywords (List[str]): 키워드 리스트.
+    """
+    search_words = [category] + keywords
+    search_words.extend([f"{category} {word}" for word in keywords])
+    return search_words
+
+
+async def get_or_create_keyword(session: AsyncSession, keyword: str, category: str) -> Keyword:
+    """
+    키워드 객체를 조회하거나 생성합니다.
+
+    Args:
+        session (AsyncSession): SQLAlchemy 비동기 세션 객체.
+        keyword (str): 키워드 문자열.
+        category (str): 카테고리 이름.
 
     Returns:
-        dict: 키워드 이름을 키로, 키워드 객체를 값으로 갖는 딕셔너리
+        Keyword: 조회되거나 생성된 Keyword 객체.
     """
-    # category insert
+    stmt = select(Keyword).where(Keyword.keyword == keyword)
+    result = await session.execute(stmt)
+    keyword_obj = result.scalar_one_or_none()
 
-    search_words = [category] + keywords
-    for word in keywords:
-        search_words.append(f"{category} {word}")
-    logger.info(f"Inserting {len(keywords)} keywords and images for category '{category}'")
-    # keyword insert
-    for kw in tqdm(search_words):
-        # 키워드 객체 생성 또는 조회
-        stmt = select(Keyword).where(Keyword.keyword == kw)
-        result = await session.execute(stmt)
-        keyword_obj = result.scalar_one_or_none()
-        if not keyword_obj:
-            keyword_obj = Keyword(keyword=kw, category=category)
-            session.add(keyword_obj)
-            await session.flush()
+    if not keyword_obj:
+        keyword_obj = Keyword(keyword=keyword, category=category)
+        session.add(keyword_obj)
+        await session.flush()
+    return keyword_obj
 
-        # 이미지 URL 크롤링
-        image_urls = await crawl_image_urls_by_keyword(kw, minimum_images)
 
-        # 이미지 URL 중복 제거
-        unique_image_urls = set(image_urls)
+async def process_image_urls(session: AsyncSession, keyword_obj: Keyword, image_urls: List[str]) -> None:
+    """
+    이미지 URL을 처리하고 데이터베이스에 삽입합니다.
 
-        # 기존 URL 조회
-        stmt = select(ImageURL.url).where(ImageURL.url.in_(unique_image_urls))
-        result = await session.execute(stmt)
-        existing_urls = set(row[0] for row in result)
+    Args:
+        session (AsyncSession): SQLAlchemy 비동기 세션 객체.
+        keyword_obj (Keyword): 처리할 키워드 객체.
+        image_urls (List[str]): 처리할 이미지 URL 리스트.
+    """
+    unique_image_urls = set(image_urls)
+    existing_urls = await get_existing_urls(session, unique_image_urls)
+    new_urls = unique_image_urls - existing_urls
 
-        new_urls = [url for url in unique_image_urls if url not in existing_urls]
+    for url in tqdm(new_urls, desc="Processing new URLs"):
+        image_url_obj = ImageURL(url=url)
+        session.add(image_url_obj)
+        await session.flush()
+        mapping = KeywordImageMapping(keyword_id=keyword_obj.id, image_url_id=image_url_obj.id)
+        session.add(mapping)
 
-        for url in tqdm(new_urls):
-            image_url_obj = ImageURL(url=url)
-            session.add(image_url_obj)
-            await session.flush()  # image_url_obj.id 사용하기 위해 flush
 
-            mapping = KeywordImageMapping(keyword_id=keyword_obj.id, image_url_id=image_url_obj.id)
-            session.add(mapping)
+async def get_existing_urls(session: AsyncSession, urls: Set[str]) -> Set[str]:
+    """
+    주어진 URL 목록 중 이미 데이터베이스에 존재하는 URL을 조회합니다.
 
-    await session.commit()
-    logger.info(f"Inserted {len(keywords)} keywords and images")
+    Args:
+        session (AsyncSession): SQLAlchemy 비동기 세션 객체.
+        urls (Set[str]): 조회할 URL 집합.
+
+    Returns:
+        Set[str]: 데이터베이스에 이미 존재하는 URL 집합.
+    """
+    stmt = select(ImageURL.url).where(ImageURL.url.in_(urls))
+    result = await session.execute(stmt)
+    return set(row[0] for row in result)
 
 
 async def create_unique_image_set(session: AsyncSession, category: str):
@@ -148,7 +188,7 @@ async def create_unique_image_set(session: AsyncSession, category: str):
         logger.info(f"{size}장 세트: {count}개")
 
 
-async def do_create_keywords_images(category: str, keywords: List, minimum_images=100):
+async def do_create_keywords_images(category: str, keywords: List, minimum_images: int = CRAWLING_IMAGE_BATCH_SIZE):
     """키워드를 입력받아서 네이버 검색에서 이미지를 크롤링하고 데이터베이스에 삽입하는 함수
 
     Args:
@@ -387,7 +427,7 @@ async def do_create_batch_questions():
         unused_count = result.scalar()
 
         if unused_count <= QUESTION_COUNT_BUFFER:
-            logger.warning(f"Creating questions! Current unused count: {unused_count}")
+            logger.warning(f"Creating questions! Current unused count: {unused_count}/{QUESTION_COUNT_BUFFER}")
             await do_create_questions()
         else:
             print(f"Skipping question creation! Current unused count: {unused_count}. Good!")

@@ -13,6 +13,7 @@ from bs4 import BeautifulSoup
 
 MAX_CRAWL_TRIALS = 5  # 최대 크롤링 시도 횟수
 TARGET_URL_PREFIX = "https://search.pstatic.net/common/?src="
+SELENIUM_REMOTE_URL = "http://selenium-chrome-service:4444/wd/hub"
 
 
 class CustomUserAgentSelector:
@@ -63,7 +64,7 @@ def scroll_page(driver, scroll_pause_time=2.0, num_scrolls=5):
         time.sleep(random.uniform(0.5, 2.5))
 
 
-async def crawl_image_urls_by_keyword(keyword: str, minimum_images=100):
+async def crawl_image_urls_by_keyword(keyword: str, minimum_images: int):
     """키워드로 네이버 이미지 검색 결과를 크롤링하는 함수
 
     Args:
@@ -73,15 +74,17 @@ async def crawl_image_urls_by_keyword(keyword: str, minimum_images=100):
     Returns:
         list: 이미지 URL 리스트
     """
+    logger.info(f"Start: Crawling {keyword} image url")
     ua_selector = CustomUserAgentSelector()
     chrome_options = Options()
     chrome_options.add_argument("--headless")
     chrome_options.add_argument(f"user-agent={ua_selector.random()}")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
-    driver = webdriver.Chrome(options=chrome_options)
+    driver = webdriver.Remote(options=chrome_options, command_executor=SELENIUM_REMOTE_URL)
     image_urls = []
     trials = 0
+    logger.info(f"Start: Crawling {keyword} image url")
     try:
         keyword = keyword.replace(" ", "+")
         url = f"https://search.naver.com/search.naver?where=image&query={keyword}"
