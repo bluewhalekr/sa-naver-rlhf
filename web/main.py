@@ -55,7 +55,7 @@ q_gen_page = st.Page("question/generator.py", title="질문 생성", icon=":mate
 
 # Page routing
 if st.session_state['authentication_status']:
-    page_dict = {"Question": [q_gen_page], "Account": [login_page]}
+    page_dict = {"Question": [q_gen_page], "Account": [logout_page]}
     pg = st.navigation(page_dict)
 
 else:
