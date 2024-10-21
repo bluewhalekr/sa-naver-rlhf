@@ -53,27 +53,15 @@ def logout():
         authenticator.cookie_controller.delete_cookie()
 
 
-def register_user():
-    if st.session_state['authentication_status'] and st.session_state['username'] == 'admin':
-        authenticator.register_user()
-
-
 # Page definitions
 login_page = st.Page(login, title="Log in", icon=":material/login:")
 logout_page = st.Page(logout, title="Log out", icon=":material/logout:")
-
-register_user_page = st.Page(register_user, title="Register user", icon=":material/security:")
 
 q_gen_page = st.Page("question/generator.py", title="Question maker", icon=":material/chat:")
 
 # Page routing
 if st.session_state['authentication_status']:
-    page_dict = {"Question": [q_gen_page]}
-
-    if st.session_state['username'] == 'admin':
-        page_dict["Admin"] = [register_user_page]
-
-    page_dict["Account"] = [logout_page]
+    page_dict = {"Question": [q_gen_page], "Account": [login_page]}
     pg = st.navigation(page_dict)
 
 else:
