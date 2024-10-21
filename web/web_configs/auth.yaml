@@ -5,20 +5,49 @@ cookie:
 credentials:
   usernames:
     admin:
-      email: jsmith@gmail.com
+      email: admin@admin.com
       failed_login_attempts: 0
       logged_in: false
       name: Admin
-      password: $2b$12$C/iO5a3iTEcSZ/gX/UOMUOXhiH1/koe9GEYyQfz8n5ERHqOEMydBC
-    john1:
-      email: abcd@gogo.com
-      first_name: John
-      last_name: Doe
-      logged_in: false
-      password: $2b$12$R60E9xJYDLCnDm/C.yCX.e8/i3LKPWO.A2BXvkhEddzn1WUBLzpfK
-      password_hint: dont know
-      roles: null
-    labelers:
-      email: rbriggs@gmail.com
-      name: Labelers
-      password: $2b$12$4mIY0YBRdgW.P7T/1HWBcOsVIyfgamxlVlacPEa62/1ZKe0L5OR0y
+      password: $2b$12$d4CbxAgoyecoSpKgsht5d.wE8ouZBj.Nlr7fX2sOTG4kN9J7CFKHq
+      token: null
+    labeler1:
+      email: calliope@aimmoworks.co.kr
+      name: Calliope
+      password: $2b$12$4dF/ljKvoz7axGIa3dh90OvxHpnG6tCdra3pRcLbGVU0u0nIsiTVW
+    labeler2:
+      email: craig@aimmoworks.co.kr
+      name: Craig
+      password: $2b$12$gqvduRBF/to5SstEwNZ9ouHj5WMDWHPKnI56ms0i8FDyiNPF5zryq
+    labeler3:
+      email: rosina@aimmoworks.co.kr
+      name: Rosina
+      password: $2b$12$gX/YxnhjG1sU0Sow/cuFTuMINLmuLpvglwKTOhDx1PzPSNisn6Cmm
+    labeler4:
+      email: river@aimmoworks.co.kr
+      name: River
+      password: $2b$12$Qrct4rkuzL8ZL.3cEZZ2..Ek9QehQz3ivW3DCKm3OlozSXKxFphCq
+    labeler5:
+      email: estelle@aimmoworks.co.kr
+      name: Estelle
+      password: $2b$12$swS48VvRbr3AknqImNUHDebH2S8uzo3r1BNTVJtUPeaxNFePn3.dW
+    labeler6:
+      email: camila@aimmoworks.co.kr
+      name: Camila
+      password: $2b$12$QWHDLqV3554k2Og5v7DukuPMZklYcrJyg6t5RHV4gVkvhz6arTTPW
+    labeler7:
+      email: sylvia@aimmo.co.kr
+      name: Sylvia
+      password: $2b$12$93MAb6cTJ2n8law64N47jOgkIxjTeBWO9omOEoX/f/xN5fhtr3ZsG
+    labeler8:
+      email: furi@aimmo.co.kr
+      name: Furi
+      password: $2b$12$6DwlupBBWJA8U/2tOL5FCuBhgssfyqNdmA5cLYP2Yw5WSK0tVLBDm
+    labeler9:
+      email: nicolas@aimmo.co.kr
+      name: Nicolas
+      password: $2b$12$C9/hDOq.hwcpx8EdbVZ9lOCRMRPJhfGKeU7yShKhQO9IM5KyNA6Oy
+    labeler_qa:
+      email: abc@gmail.com
+      name: Labeler QA
+      password: $2b$12$iRGfD/D72R0PA7AA2YcNKuK/K6Ok8hassfg/zkNmj2Mn56N9sN1Z6
