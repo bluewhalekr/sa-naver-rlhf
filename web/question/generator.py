@@ -1,4 +1,6 @@
+import json
 import logging
+import os
 from datetime import timedelta
 from typing import List
 
@@ -6,10 +8,16 @@ import httpx
 import streamlit as st
 from pydantic import BaseModel
 
-
 # 데이터 가져올 수 있는 API의 url
 API_URL = "https://task1.smart-agent.bluewhale.kr/v1/questions"
-TEST_TOKEN = "smartagent160321!!"
+WEB_ROOT = os.path.dirname(os.path.dirname(__file__))
+TOKEN_PATH = "/app/configs/token.json"
+if not os.path.exists(TOKEN_PATH):
+    TOKEN_PATH = os.path.join(WEB_ROOT, "web_configs", "token.json")
+
+
+IMAGE_ROOT = os.path.join(WEB_ROOT, 'images')
+ICON_PATH = os.path.join(IMAGE_ROOT, "AIMMO-시그니처 로고_바이올렛+블랙.png")
 
 
 class ImageInfo(BaseModel):
@@ -41,14 +49,15 @@ def open_image_url(image_url) -> bytes:
         raise ValueError(f"Failed to open image URL: {image_url}")
 
 
-@st.cache_data(ttl=timedelta(seconds=10))
-def get_image_questions(user_id: str) -> dict:
+@st.cache_data(ttl=timedelta(seconds=10), hash_funcs={int: lambda x: True})
+def get_image_questions(user_id: str, image_num: int) -> dict:
     headers = {
         "Authorization": f"Bearer {user_id}"
     }
 
     try:
-        response = client.get(API_URL, headers=headers)
+        url_with_params = f"{API_URL}?image_count={image_num}"
+        response = client.get(url_with_params, headers=headers)
 
     except Exception as e:
         raise ValueError("Failed to get image questions") from e
@@ -57,26 +66,41 @@ def get_image_questions(user_id: str) -> dict:
         return response.json()
 
     else:
-        raise ValueError("Failed to get image questions")
+        raise ValueError(f"Failed to get image questions: {response.content}")
 
 
-def get_user_token(email: str) -> str:
-    return NotImplementedError
+@st.cache_data
+def get_user_token(username: str) -> str:
+    with open(TOKEN_PATH, "r") as f:
+        username_to_token = json.load(f)
+
+    if token := username_to_token.get(username):
+        return token
+
+    else:
+        raise ValueError("Please login first.")
+
+
+@st.fragment
+def radio_button():
+    st.logo(ICON_PATH, icon_image=ICON_PATH)
+    image_num = st.radio("이미지 개수", [1, 2, 3], horizontal=True)
+
+    return image_num
 
 
 @st.fragment
 def q_gen():
-    if st.button("질문 생성", use_container_width=True):
+    image_num = radio_button()
+
+    if st.button("이미지 검색 및 질문 생성하기", use_container_width=True):
         username = st.session_state['username']
         email = st.session_state['email']
         logging.debug(f"button clicked: {username}, {email}")
 
-        if username == "admin":
-            token = TEST_TOKEN
-        else:
-            token = get_user_token(email)
+        token = get_user_token(username)
 
-        image_questions = get_image_questions(token)
+        image_questions = get_image_questions(token, image_num)
         image_questions = ImageQuestions(**image_questions)
         image_num = len(image_questions.image_info)
 
