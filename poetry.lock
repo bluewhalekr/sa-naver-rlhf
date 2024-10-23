@@ -765,20 +765,6 @@ files = [
 streamlit = ">=1.18.0"
 
 [[package]]
-name = "extra-streamlit-components-better-cookie-manager"
-version = "0.0.10"
-description = "An all-in-one place, to find complex or just natively unavailable components on streamlit."
-optional = false
-python-versions = ">=3.6"
-files = [
-    {file = "extra_streamlit_components_better_cookie_manager-0.0.10-py3-none-any.whl", hash = "sha256:ca2966f2a51e16aa41b75d7bc525b0ecde8a139daa85b4e54df955eb7ffafba6"},
-    {file = "extra_streamlit_components_better_cookie_manager-0.0.10.tar.gz", hash = "sha256:fe826299f337b2deba36ae28f03b2a975dacbc87dc2399002f0e52c420b0646a"},
-]
-
-[package.dependencies]
-streamlit = ">=0.86"
-
-[[package]]
 name = "fastapi"
 version = "0.115.2"
 description = "FastAPI framework, high performance, easy to learn, fast to code, ready for production"
@@ -3866,4 +3852,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8,<3.9.7"
-content-hash = "48359928e5b42a84fb1dc1b1c603a6795f59db931242214a51da7c30d3583661"
+content-hash = "cac241a66a3436a271e4ebf117a0da72bc851e083ddb9c213c02de3eb795df4f"
