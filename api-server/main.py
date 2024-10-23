@@ -9,50 +9,12 @@ from services import do_create_keywords_images, do_create_questions, do_get_ques
 from db_config import db_manager
 from config import SCHEDULER_INTERVAL
 from models import KeywordsRequest
+from auth import verify_user, verify_admin_user
 
 logger.remove()  # 기본 핸들러 제거
 logger.add(sys.stderr, level="INFO")
 
 app = FastAPI()
-security = HTTPBearer()
-
-
-def verify_user_token(token: str) -> bool:
-    """Verify user token"""
-    # TODO need to implement
-    return token == "smartagent160321!!"
-
-
-def verify_admin_token(token: str) -> bool:
-    """Verify admin token"""
-    return token == "smartagent160321!!"
-
-
-def verify_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    """Get user token
-    Args:
-        credentials (HTTPAuthorizationCredentials): FastAPI의 사용자 인증 정보
-    returns:
-        str: 사용자 토큰
-    """
-    token = credentials.credentials
-    if verify_user_token(token) or verify_admin_token(token):
-        return token
-
-    raise HTTPException(status_code=HTTP_403_FORBIDDEN, detail="Invalid token")
-
-
-def verify_admin_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    """Verify admin token
-    Args:
-        credentials (HTTPAuthorizationCredentials): FastAPI의 사용자 인증 정보
-    returns:
-        str: 어드민 토큰
-    """
-    token = credentials.credentials
-    if not verify_admin_token(token):
-        raise HTTPException(status_code=HTTP_403_FORBIDDEN, detail="Invalid token")
-    return token
 
 
 @app.middleware("http")
