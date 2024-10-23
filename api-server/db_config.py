@@ -2,7 +2,7 @@
 
 import json
 from contextlib import asynccontextmanager
-from sqlalchemy import Column, Integer, String, ForeignKey, JSON, UniqueConstraint, Float, ARRAY
+from sqlalchemy import Column, Integer, String, ForeignKey, JSON, UniqueConstraint, Float, ARRAY, Boolean
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
@@ -13,13 +13,11 @@ Base = declarative_base()
 
 class Token(Base):
     __tablename__ = "tokens"
-
     id = Column(Integer, primary_key=True, index=True)
     token = Column(String, unique=True, index=True)
-    created_at = Column(Float)
-    expires_at = Column(Float)
-    user_id = Column(String)
-    scopes = Column(ARRAY(String))
+    token = Column(String)
+    role = Column(String, default="user")
+    is_active = Column(Boolean, default=True)
 
 
 class Keyword(Base):
