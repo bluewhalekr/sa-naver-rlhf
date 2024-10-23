@@ -23,11 +23,11 @@ WORKDIR /root/sa_naver_rlhf
 # 의존성 설치 스테이지에서 설치한 의존성 복사
 COPY ./web /root/sa_naver_rlhf
 
-ARG OPENAI_API_KEY
-ENV OPENAI_API_KEY=$OPENAI_API_KEY
+ARG DATASET_API_URL
+ENV DATASET_API_URL=$DATASET_API_URL
 
 EXPOSE 8000
 
-HEALTHCHECK CMD curl --fail http://localhost:8501/_stcore/health
+HEALTHCHECK CMD curl --fail http://localhost:8000/_stcore/health
 
 CMD ["streamlit", "run", "main.py", "--server.port", "8000", "--server.address", "0.0.0.0", "--client.toolbarMode", "minimal", "--theme.base", "light"]
