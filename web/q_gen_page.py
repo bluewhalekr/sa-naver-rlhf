@@ -21,6 +21,8 @@ if not os.path.exists(TOKEN_PATH):
 IMAGE_ROOT = os.path.join(WEB_ROOT, 'images')
 ICON_PATH = os.path.join(IMAGE_ROOT, "AIMMO-시그니처 로고_바이올렛+블랙.png")
 
+BTN_WAITING_TIME = 10
+
 
 class ImageInfo(BaseModel):
     keyword: str
@@ -44,7 +46,7 @@ httpx_client = get_httpx_client()
 
 @st.cache_data(ttl=timedelta(minutes=1))
 def open_image_url(image_url) -> bytes:
-    logger.info(f"{st.session_state['username'].rjust(12)}|  request image URL: {image_url}")
+    logger.info(f"{st.session_state['username'].rjust(12)}| request image URL: {image_url}")
 
     try:
         response = httpx_client.get(image_url)
@@ -59,9 +61,9 @@ def open_image_url(image_url) -> bytes:
         raise HTTPError(f"[{response.status_code}] Failed to open image URL: {image_url}")
 
 
-@st.cache_data(ttl=timedelta(seconds=10), hash_funcs={int: lambda x: True})
+@st.cache_data(ttl=timedelta(seconds=BTN_WAITING_TIME-1), hash_funcs={int: lambda x: True})
 def get_image_questions(user_id: str, image_num: int) -> dict:
-    logger.info(f"{st.session_state['username'].rjust(12)}|  request image questions. nums: {image_num}")
+    logger.info(f"{st.session_state['username'].rjust(12)}| request image questions. nums: {image_num}")
 
     headers = {
         "Authorization": f"Bearer {user_id}"
@@ -102,25 +104,22 @@ def radio_button():
 
 
 @st.fragment
-def q_gen():
-    image_num = radio_button()
+def btn_click_action(image_num):
+    username = st.session_state['username']
+    logger.info(f"{username.rjust(12)}| button clicked")
 
-    if st.button("이미지 검색 및 질문 생성하기", use_container_width=True):
-        username = st.session_state['username']
-        logger.info(f"{username.rjust(12)}|  Button clicked")
+    token = get_user_token(username)
 
-        token = get_user_token(username)
-
+    with st.spinner("이미지와 질문을 가져오는 중..."):
         image_questions = get_image_questions(token, image_num)
         image_questions = ImageQuestions(**image_questions)
         image_num = len(image_questions.image_info)
 
         # Display images
-        st.markdown("---")
         st.markdown("### 이미지")
 
-        for image_col, image_info in zip(st.columns(image_num, vertical_alignment="bottom"),
-                                         image_questions.image_info):
+        columns = st.columns(image_num, vertical_alignment="bottom")
+        for image_col, image_info in zip(columns, image_questions.image_info):
             image_data = open_image_url(image_info.image_url)
 
             image_col.image(image_data)
@@ -143,9 +142,47 @@ def q_gen():
                     st.code(question, language="html")
 
 
-if st.session_state['authentication_status']:
-    q_gen()
+def btn_click_callback():
+    st.session_state.btn_clicked = True
 
-else:
-    st.warning("로그인이 필요합니다.")
+
+def btn_init():
+    st.session_state.btn_clicked = False
+
+
+@st.fragment(run_every=BTN_WAITING_TIME)
+def btn():
+    btn_disabled = st.session_state.btn_clicked
+    if st.button(
+        "이미지 검색 및 질문 생성하기",
+        use_container_width=True,
+        disabled=btn_disabled,
+        on_click=btn_click_callback,
+    ):
+        st.rerun()
+
+    return st.session_state.btn_clicked
+
+
+@st.fragment
+def q_gen():
+    image_num = radio_button()
+
+    if btn():
+        btn_click_action(image_num)
+        btn_init()
+
+
+def page_main():
+    if not st.session_state.get('btn_clicked'):
+        st.session_state['btn_clicked'] = False
+
+    if st.session_state['authentication_status']:
+        q_gen()
+
+    else:
+        st.warning("로그인이 필요합니다.")
+
+
+page_main()
 

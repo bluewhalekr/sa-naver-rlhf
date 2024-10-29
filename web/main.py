@@ -56,7 +56,7 @@ q_gen_page = st.Page("q_gen_page.py", title="질문 생성", icon=":material/cha
 
 # Page routing
 if st.session_state['authentication_status']:
-    logger.info(f"{st.session_state['username'].rjust(12)}| User authenticated")
+    logger.info(f"{st.session_state['username'].rjust(12)}| user authenticated")
 
     page_dict = {"Question": [q_gen_page], "Account": [logout_page]}
     pg = st.navigation(page_dict)
