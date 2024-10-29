@@ -5,11 +5,12 @@ import streamlit_authenticator as stauth
 import yaml
 from yaml.loader import SafeLoader
 
+from logger import logger
+
 WEB_ROOT = os.path.abspath(os.path.dirname(__file__))
 AUTH_CONFIG_PATH = '/app/configs/auth.yaml'
 if not os.path.exists(AUTH_CONFIG_PATH):
     AUTH_CONFIG_PATH = os.path.join(WEB_ROOT, 'web_configs', 'auth.yaml')
-
 
 st.set_page_config(page_title="Question Gen", page_icon="🤖", layout="wide")
 
@@ -51,10 +52,12 @@ def logout():
 login_page = st.Page(login, title="Log in", icon=":material/login:")
 logout_page = st.Page(logout, title="Log out", icon=":material/logout:")
 
-q_gen_page = st.Page("question/generator.py", title="질문 생성", icon=":material/chat:")
+q_gen_page = st.Page("q_gen_page.py", title="질문 생성", icon=":material/chat:")
 
 # Page routing
 if st.session_state['authentication_status']:
+    logger.info(f"{st.session_state['username'].rjust(12)}| User authenticated")
+
     page_dict = {"Question": [q_gen_page], "Account": [logout_page]}
     pg = st.navigation(page_dict)
 
