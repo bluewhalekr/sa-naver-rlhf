@@ -1,5 +1,4 @@
 import json
-import logging
 import os
 from datetime import timedelta
 from typing import List
@@ -7,10 +6,13 @@ from typing import List
 import httpx
 import streamlit as st
 from pydantic import BaseModel
+from requests.exceptions import HTTPError
+
+from logger import logger
 
 # 데이터 가져올 수 있는 API의 url
 API_URL = "https://task1.smart-agent.bluewhale.kr/v1/questions"
-WEB_ROOT = os.path.dirname(os.path.dirname(__file__))
+WEB_ROOT = os.path.dirname(__file__)
 TOKEN_PATH = "/app/configs/token.json"
 if not os.path.exists(TOKEN_PATH):
     TOKEN_PATH = os.path.join(WEB_ROOT, "web_configs", "token.json")
@@ -36,37 +38,41 @@ client = httpx.Client(transport=transport)
 
 @st.cache_data(ttl=timedelta(minutes=1))
 def open_image_url(image_url) -> bytes:
+    logger.info(f"{st.session_state['username'].rjust(12)}|  request image URL: {image_url}")
+
     try:
         response = client.get(image_url)
 
     except Exception as e:
-        raise ValueError(f"Failed to open image URL: {image_url}") from e
+        raise HTTPError(f"Failed to open image URL: {image_url}") from e
 
     if response.status_code == 200:
         return response.content
 
     else:
-        raise ValueError(f"Failed to open image URL: {image_url}")
+        raise HTTPError(f"[{response.status_code}] Failed to open image URL: {image_url}")
 
 
 @st.cache_data(ttl=timedelta(seconds=10), hash_funcs={int: lambda x: True})
 def get_image_questions(user_id: str, image_num: int) -> dict:
+    logger.info(f"{st.session_state['username'].rjust(12)}|  request image questions. nums: {image_num}")
+
     headers = {
         "Authorization": f"Bearer {user_id}"
     }
+    url_with_params = f"{API_URL}?image_count={image_num}"
 
     try:
-        url_with_params = f"{API_URL}?image_count={image_num}"
         response = client.get(url_with_params, headers=headers)
 
     except Exception as e:
-        raise ValueError("Failed to get image questions") from e
+        raise HTTPError(f"Failed to get image questions, url: {url_with_params}") from e
 
     if response.status_code == 200:
         return response.json()
 
     else:
-        raise ValueError(f"Failed to get image questions: {response.content}")
+        raise HTTPError(f"[{response.status_code}] Failed to get image questions: {response.content}")
 
 
 @st.cache_data
@@ -95,8 +101,7 @@ def q_gen():
 
     if st.button("이미지 검색 및 질문 생성하기", use_container_width=True):
         username = st.session_state['username']
-        email = st.session_state['email']
-        logging.debug(f"button clicked: {username}, {email}")
+        logger.info(f"{username.rjust(12)}|  Button clicked")
 
         token = get_user_token(username)
 
