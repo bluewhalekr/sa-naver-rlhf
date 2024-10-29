@@ -32,8 +32,14 @@ class ImageQuestions(BaseModel):
     questions: List[str]
 
 
-transport = httpx.HTTPTransport(retries=3)
-client = httpx.Client(transport=transport)
+@st.cache_resource(ttl=timedelta(hours=1))
+def get_httpx_client():
+    transport = httpx.HTTPTransport(retries=3)
+    client = httpx.Client(transport=transport)
+    return client
+
+
+httpx_client = get_httpx_client()
 
 
 @st.cache_data(ttl=timedelta(minutes=1))
@@ -41,7 +47,7 @@ def open_image_url(image_url) -> bytes:
     logger.info(f"{st.session_state['username'].rjust(12)}|  request image URL: {image_url}")
 
     try:
-        response = client.get(image_url)
+        response = httpx_client.get(image_url)
 
     except Exception as e:
         raise HTTPError(f"Failed to open image URL: {image_url}") from e
@@ -63,7 +69,7 @@ def get_image_questions(user_id: str, image_num: int) -> dict:
     url_with_params = f"{API_URL}?image_count={image_num}"
 
     try:
-        response = client.get(url_with_params, headers=headers)
+        response = httpx_client.get(url_with_params, headers=headers)
 
     except Exception as e:
         raise HTTPError(f"Failed to get image questions, url: {url_with_params}") from e
