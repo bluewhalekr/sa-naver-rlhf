@@ -54,3 +54,6 @@ test.ipynb
 
 # PyCharm files
 .idea/
+
+# dev files
+web/dev/

@@ -9,7 +9,7 @@ today_now = datetime.now().strftime("%Y%m%d%H%M%S")
 
 LOG_FORMAT = "%(asctime)s | %(levelname)8s | %(message)s"
 LOG_FILE_PATH = f"logs/session_{today_now}/app.log"
-LOG_ROOT = "/tmp" if os.environ.get('KUBERNETES_SERVICE_HOST') else "dev"
+LOG_ROOT = "/tmp" if os.environ.get('KUBERNETES_SERVICE_HOST') else "web/dev"
 LOG_FILE_PATH = os.path.join(LOG_ROOT, LOG_FILE_PATH)
 Path(LOG_FILE_PATH).parent.mkdir(exist_ok=True, parents=True)
 
