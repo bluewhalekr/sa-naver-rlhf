@@ -12,6 +12,7 @@ from logger import logger
 
 # 데이터 가져올 수 있는 API의 url
 API_URL = "https://task1.smart-agent.bluewhale.kr/v1/questions"
+
 WEB_ROOT = os.path.dirname(__file__)
 TOKEN_PATH = "/app/configs/token.json"
 if not os.path.exists(TOKEN_PATH):
@@ -20,6 +21,8 @@ if not os.path.exists(TOKEN_PATH):
 
 IMAGE_ROOT = os.path.join(WEB_ROOT, 'images')
 ICON_PATH = os.path.join(IMAGE_ROOT, "AIMMO-시그니처 로고_바이올렛+블랙.png")
+ASSET_ROOT = os.path.join(WEB_ROOT, 'assets')
+ICON_PATH = os.path.join(ASSET_ROOT, "AIMMO-시그니처 로고_바이올렛+블랙.png")
 
 BTN_WAITING_TIME = 10
 
@@ -185,4 +188,3 @@ def page_main():
 
 
 page_main()
-

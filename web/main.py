@@ -14,8 +14,8 @@ if not os.path.exists(AUTH_CONFIG_PATH):
 
 st.set_page_config(page_title="Question Gen", page_icon="🤖", layout="wide")
 
-IMAGE_ROOT = os.path.join(WEB_ROOT, 'images')
-ICON_PATH = os.path.join(IMAGE_ROOT, "AIMMO-시그니처 로고_바이올렛+블랙.png")
+ASSET_ROOT = os.path.join(WEB_ROOT, 'assets')
+ICON_PATH = os.path.join(ASSET_ROOT, "AIMMO-시그니처 로고_바이올렛+블랙.png")
 
 
 with open(AUTH_CONFIG_PATH, 'r') as file:
