@@ -18,9 +18,6 @@ TOKEN_PATH = "/app/configs/token.json"
 if not os.path.exists(TOKEN_PATH):
     TOKEN_PATH = os.path.join(WEB_ROOT, "web_configs", "token.json")
 
-
-IMAGE_ROOT = os.path.join(WEB_ROOT, 'images')
-ICON_PATH = os.path.join(IMAGE_ROOT, "AIMMO-시그니처 로고_바이올렛+블랙.png")
 ASSET_ROOT = os.path.join(WEB_ROOT, 'assets')
 ICON_PATH = os.path.join(ASSET_ROOT, "AIMMO-시그니처 로고_바이올렛+블랙.png")
 
