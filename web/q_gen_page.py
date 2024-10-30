@@ -12,14 +12,14 @@ from logger import logger
 
 # 데이터 가져올 수 있는 API의 url
 API_URL = "https://task1.smart-agent.bluewhale.kr/v1/questions"
+
 WEB_ROOT = os.path.dirname(__file__)
 TOKEN_PATH = "/app/configs/token.json"
 if not os.path.exists(TOKEN_PATH):
     TOKEN_PATH = os.path.join(WEB_ROOT, "web_configs", "token.json")
 
-
-IMAGE_ROOT = os.path.join(WEB_ROOT, 'images')
-ICON_PATH = os.path.join(IMAGE_ROOT, "AIMMO-시그니처 로고_바이올렛+블랙.png")
+ASSET_ROOT = os.path.join(WEB_ROOT, 'assets')
+ICON_PATH = os.path.join(ASSET_ROOT, "AIMMO-시그니처 로고_바이올렛+블랙.png")
 
 BTN_WAITING_TIME = 10
 
@@ -97,7 +97,7 @@ def get_user_token(username: str) -> str:
 
 @st.fragment
 def radio_button():
-    st.logo(ICON_PATH, icon_image=ICON_PATH)
+    st.logo(ICON_PATH, icon_image=ICON_PATH)  # radio 버튼 action이 실행될 때마다 로고가 사라지는 이슈 => logo 함수 여기에 위치
     image_num = st.radio("이미지 개수", [1, 2, 3], horizontal=True)
 
     return image_num
@@ -185,4 +185,3 @@ def page_main():
 
 
 page_main()
-
