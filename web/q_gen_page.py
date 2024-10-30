@@ -97,7 +97,7 @@ def get_user_token(username: str) -> str:
 
 @st.fragment
 def radio_button():
-    st.logo(ICON_PATH, icon_image=ICON_PATH)
+    st.logo(ICON_PATH, icon_image=ICON_PATH)  # radio 버튼 action이 실행될 때마다 로고가 사라지는 이슈 => logo 함수 여기에 위치
     image_num = st.radio("이미지 개수", [1, 2, 3], horizontal=True)
 
     return image_num
