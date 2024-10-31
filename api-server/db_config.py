@@ -15,7 +15,7 @@ class Token(Base):
     __tablename__ = "tokens"
     id = Column(Integer, primary_key=True, index=True)
     token = Column(String, unique=True, index=True)
-    token = Column(String)
+    user_id = Column(String)
     role = Column(String, default="user")
     is_active = Column(Boolean, default=True)
 
@@ -35,6 +35,7 @@ class ImageURL(Base):
     __tablename__ = "image_urls"
     id = Column(Integer, primary_key=True)
     url = Column(String, unique=True, nullable=False)
+    duplicated = Column(Boolean, default=False)
 
 
 class KeywordImageMapping(Base):
