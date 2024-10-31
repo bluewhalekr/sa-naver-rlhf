@@ -152,6 +152,7 @@ def btn_init():
 
 @st.fragment(run_every=BTN_WAITING_TIME)
 def btn():
+    st.logo(ICON_PATH, icon_image=ICON_PATH)  # radio 버튼 action이 실행될 때마다 로고가 사라지는 이슈 => logo 함수 여기에 위치
     btn_disabled = st.session_state.btn_clicked
     if st.button(
         "이미지 검색 및 질문 생성하기",
