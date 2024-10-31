@@ -1,14 +1,14 @@
-import requests
 import json
-import time
-import sys
-from collections import OrderedDict
-import xml.etree.ElementTree as ET
 import re
-from cachetools import TTLCache
-from urllib import parse
+import sys
+import time
+import xml.etree.ElementTree as ET
+from collections import OrderedDict
 from collections import namedtuple
+from urllib import parse
 
+import requests
+from cachetools import TTLCache
 
 BASE_URL = 'https://m.search.naver.com/p/csearch/ocontent/util/SpellerProxy'
 
@@ -21,27 +21,30 @@ class CheckResult:
     STATISTICAL_CORRECTION = 4
 
 
-_checked = namedtuple('Checked',
-    ['result', 'original', 'checked', 'errors', 'words', 'time'])
+_checked = namedtuple('Checked', ['result', 'original', 'checked', 'errors', 'words', 'time'])
 
-cache = TTLCache(maxsize = 10, ttl = 3600)
+cache = TTLCache(maxsize=10, ttl=3600)
+
 
 def read_token():
     try:
-        TOKEN = cache.get('PASSPORT_TOKEN')
-        return TOKEN
+        token = cache.get('PASSPORT_TOKEN')
+        return token
     except KeyError:
         return None
 
-def update_token(agent):
 
+def update_token(agent):
     html = agent.get(url='https://search.naver.com/search.naver?where=nexearch&sm=top_hty&fbm=1&ie=utf8&query=맞춤법검사기')
 
     match = re.search('passportKey=([a-zA-Z0-9]+)', html.text)
     if match is not None:
         token = parse.unquote(match.group(1))
         cache['PASSPORT_TOKEN'] = token
-    return token
+
+        return token
+
+    return None
 
 
 def get_response(token, text):
@@ -63,7 +66,7 @@ def get_response(token, text):
     r = _agent.get(BASE_URL, params=payload, headers=headers)
     data = json.loads(r.text)
 
-    if 'error' in data['message'] :
+    if 'error' in data['message']:
         r = get_response(update_token(_agent), text)
 
     return r
@@ -71,8 +74,7 @@ def get_response(token, text):
 
 class Checked(_checked):
     def __new__(cls, result=False, original='', checked='', errors=0, words=[], time=0.0):
-        return super(Checked, cls).__new__(
-            cls, result, original, checked, errors, words, time)
+        return super(Checked, cls).__new__(cls, result, original, checked, errors, words, time)
 
     def as_dict(self):
         d = {
