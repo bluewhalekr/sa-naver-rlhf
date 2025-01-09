@@ -9,11 +9,12 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup
+from funcy import retry
 
 
 MAX_CRAWL_TRIALS = 5  # 최대 크롤링 시도 횟수
 TARGET_URL_PREFIX = "https://search.pstatic.net/common/?src="
-SELENIUM_REMOTE_URL = "http://selenium-chrome-service:4444/wd/hub"
+SELENIUM_REMOTE_URL = "http://10.10.5.13:30409/wd/hub" #"http://selenium-chrome-service:4444/wd/hub"
 
 
 class CustomUserAgentSelector:
@@ -81,7 +82,9 @@ async def crawl_image_urls_by_keyword(keyword: str, minimum_images: int):
     chrome_options.add_argument(f"user-agent={ua_selector.random()}")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
-    driver = webdriver.Remote(options=chrome_options, command_executor=SELENIUM_REMOTE_URL)
+    #driver = webdriver.Remote(options=chrome_options, command_executor=SELENIUM_REMOTE_URL)
+    # local webdriver
+    driver = webdriver.Chrome(options=chrome_options)
     image_urls = []
     trials = 0
     logger.info(f"Start: Crawling {keyword} image url")
@@ -98,7 +101,7 @@ async def crawl_image_urls_by_keyword(keyword: str, minimum_images: int):
             scroll_page(driver, scroll_pause_time=random.uniform(1.0, 3.0), num_scrolls=5)
 
             # 추가 대기 시간
-            time.sleep(random.uniform(2, 4))
+            time.sleep(0.5)
 
             soup = BeautifulSoup(driver.page_source, "html.parser")
             images = soup.select(".image_tile_bx img")
@@ -110,3 +113,45 @@ async def crawl_image_urls_by_keyword(keyword: str, minimum_images: int):
         return image_urls
     finally:
         driver.quit()
+
+
+class LocalCrawler:
+    """로컬 크롤러 클래스"""
+
+    def __init__(self):
+        ua_selector = CustomUserAgentSelector()
+        chrome_options = Options()
+        chrome_options.add_argument("--headless")
+        chrome_options.add_argument(f"user-agent={ua_selector.random()}")
+        chrome_options.add_argument("--no-sandbox")
+        chrome_options.add_argument("--disable-dev-shm-usage")
+        self.driver = webdriver.Chrome(options=chrome_options)
+
+    @retry(2)
+    def crawl_image_urls(self, keyword: str, minimum_images: int = 1):
+        """이미지 URL 크롤링 메서드"""
+        image_urls = []
+        trials = 0
+        keyword = keyword.replace(" ", "+")
+        url = f"https://search.naver.com/search.naver?where=image&query={keyword}"
+        self.driver.get(url)
+
+        # 페이지 로딩 대기
+        WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "image_tile_bx")))
+
+        while len(image_urls) < minimum_images and trials < MAX_CRAWL_TRIALS:
+            # 스크롤 수행
+            scroll_page(self.driver, scroll_pause_time=random.uniform(1.0, 3.0), num_scrolls=5)
+
+            # 추가 대기 시간
+            time.sleep(random.uniform(2, 4))
+
+            soup = BeautifulSoup(self.driver.page_source, "html.parser")
+            images = soup.select(".image_tile_bx img")
+            image_urls = [
+                img["src"] for img in images if "src" in img.attrs and img["src"].startswith(TARGET_URL_PREFIX)
+            ]
+            trials += 1
+            logger.info(f"Crawling {keyword} image url: Trial {trials}: Found {len(image_urls)} images")
+
+        return image_urls

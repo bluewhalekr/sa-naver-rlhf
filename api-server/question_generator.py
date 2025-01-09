@@ -8,8 +8,8 @@ from pydantic import BaseModel
 from config import AZURE_ENDPOINT, OPENAI_API_KEY, OPENAI_API_VERSION
 
 GPT_MODEL = "gpt-4o"
-GPT_INPUT_PRICE = 5 * 0.000001
-GPT_OUTPUT_PRICE = 15 * 0.000001
+GPT_INPUT_PRICE = 2.5 * 0.000001
+GPT_OUTPUT_PRICE = 10 * 0.000001
 
 
 def to_user_message(text: str, image_urls: Optional[List[str]] = None):
