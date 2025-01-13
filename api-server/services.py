@@ -1,5 +1,6 @@
 """크롤링한 데이터를 데이터베이스에 삽입하는 서비스 모듈"""
 
+import asyncio
 import json
 import random
 import time
@@ -21,6 +22,7 @@ from db_config import (
     async_session_scope,
     db_manager,
 )
+from question_generator import q_generator, GptResponse
 from loguru import logger
 from sqlalchemy import and_, func, select, update
 from sqlalchemy.exc import SQLAlchemyError
@@ -217,11 +219,9 @@ async def do_create_keywords_images(
         await create_unique_image_set(session, category)
 
 
-"""
 async def async_question_generate(urls: List[str]) -> GptResponse:
     loop = asyncio.get_running_loop()
     return await loop.run_in_executor(thread_pool, q_generator.generate, urls)
-
 
 
 async def do_create_questions(batch_size: int = 5):
@@ -269,7 +269,6 @@ async def do_create_questions(batch_size: int = 5):
     except Exception as e:
         logger.error(f"Unexpected error in do_create_questions: {str(e)}")
         raise
-"""
 
 
 async def fetch_unmapped_image_sets(session: AsyncSession, batch_size: int):
@@ -398,24 +397,29 @@ async def generate_query_response_v2(session: AsyncSession, used_by: str):
     await session.commit()
 
     # Fetch queries associated with the random intent
-    query = select(Query).where(Query.intent_id == intent_obj.id).limit(1)
+    query = select(Query).where(Query.intent_id == intent_obj.id)
     result = await session.execute(query)
-    query_obj = result.scalar()
+    query_objs = result.scalars().all()
 
     # Fetch keyword sets associated with the query
-    keyword_query = select(KeywordImageURLSet).where(
-        KeywordImageURLSet.id.in_(query_obj.keyword_image_url_set_ids)
-    )
-    keyword_result = await session.execute(keyword_query)
-    keyword_sets = keyword_result.scalars().all()
+    results = []
+    for query_obj in query_objs:
+        keyword_query = select(KeywordImageURLSet).where(
+            KeywordImageURLSet.id.in_(query_obj.keyword_image_url_set_ids)
+        )
+        keyword_result = await session.execute(keyword_query)
+        keyword_sets = keyword_result.scalars().all()
 
-    return {
-        "query": query_obj.query,
-        "datas": [
-            {"keyword": ks.keyword, "image_url": ks.image_url} for ks in keyword_sets
-        ],
-        "intent_id": intent_obj.id,
-    }
+        result = {
+            "query": query_obj.query,
+            "datas": [
+                {"keyword": ks.keyword, "image_url": ks.image_url} for ks in keyword_sets
+            ],
+            "intent_id": intent_obj.id,
+        }
+        results.append(result)
+
+    return results
 
 
 async def get_unused_image_set_info(
