@@ -2,11 +2,22 @@
 
 import json
 from contextlib import asynccontextmanager
-from sqlalchemy import Column, Integer, String, ForeignKey, JSON, UniqueConstraint, Float, ARRAY, Boolean
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, relationship
+
 from config import CONNECT_STRING
+from sqlalchemy import (
+    ARRAY,
+    JSON,
+    Boolean,
+    Column,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    UniqueConstraint,
+)
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship, sessionmaker
 
 Base = declarative_base()
 
@@ -36,6 +47,40 @@ class ImageURL(Base):
     id = Column(Integer, primary_key=True)
     url = Column(String, unique=True, nullable=False)
     duplicated = Column(Boolean, default=False)
+
+
+class Persona(Base):
+    __tablename__ = "personas"
+    __table_args__ = {"schema": "naver_rlhf_v2"}
+    id = Column(Integer, primary_key=True, index=True)
+    persona = Column(String)
+
+
+class KeywordImageURLSet(Base):
+    __tablename__ = "keyword_image_url_sets"
+    __table_args__ = {"schema": "naver_rlhf_v2"}
+    id = Column(Integer, primary_key=True, index=True)
+    keyword = Column(String)
+    image_url = Column(String)
+    intent_id = Column(Integer, ForeignKey("intents.id"))
+
+
+class Query(Base):
+    __tablename__ = "queries"
+    __table_args__ = {"schema": "naver_rlhf_v2"}
+    id = Column(Integer, primary_key=True, index=True)
+    query = Column(String)
+    keyword_image_url_set_ids = Column(ARRAY(Integer))
+    intent_id = Column(Integer, ForeignKey("intents.id"))
+
+
+class Intent(Base):
+    __tablename__ = "intents"
+    __table_args__ = {"schema": "naver_rlhf_v2"}
+    id = Column(Integer, primary_key=True, index=True)
+    intent = Column(String)
+    persona_id = Column(Integer, ForeignKey("personas.id"))
+    used_by = Column(String)
 
 
 class KeywordImageMapping(Base):
@@ -97,9 +142,14 @@ class AsyncDatabaseManager:
             echo=False,
             json_serializer=lambda obj: json.dumps(obj, ensure_ascii=False),
             json_deserializer=lambda obj: json.loads(obj),
-            connect_args={"command_timeout": 60, "server_settings": {"client_encoding": "utf8"}},
+            connect_args={
+                "command_timeout": 60,
+                "server_settings": {"client_encoding": "utf8"},
+            },
         )
-        self.SessionFactory = sessionmaker(self.engine, class_=AsyncSession, expire_on_commit=False)
+        self.SessionFactory = sessionmaker(
+            self.engine, class_=AsyncSession, expire_on_commit=False
+        )
 
     def get_engine(self):
         return self.engine
