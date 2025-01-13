@@ -110,4 +110,5 @@ class QuestionGenerator:
         )
 
 
-q_generator = QuestionGenerator()
+# openai client proxy issue. need to fix
+# q_generator = QuestionGenerator()
