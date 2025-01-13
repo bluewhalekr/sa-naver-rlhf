@@ -110,5 +110,4 @@ class QuestionGenerator:
         )
 
 
-# remove the following line
-# q_generator = QuestionGenerator()
+q_generator = QuestionGenerator()

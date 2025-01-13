@@ -1,5 +1,6 @@
 """크롤링한 데이터를 데이터베이스에 삽입하는 서비스 모듈"""
 
+import asyncio
 import json
 import random
 import time
@@ -21,6 +22,7 @@ from db_config import (
     async_session_scope,
     db_manager,
 )
+from question_generator import q_generator, GptResponse
 from loguru import logger
 from sqlalchemy import and_, func, select, update
 from sqlalchemy.exc import SQLAlchemyError
@@ -217,11 +219,9 @@ async def do_create_keywords_images(
         await create_unique_image_set(session, category)
 
 
-"""
 async def async_question_generate(urls: List[str]) -> GptResponse:
     loop = asyncio.get_running_loop()
     return await loop.run_in_executor(thread_pool, q_generator.generate, urls)
-
 
 
 async def do_create_questions(batch_size: int = 5):
@@ -269,7 +269,6 @@ async def do_create_questions(batch_size: int = 5):
     except Exception as e:
         logger.error(f"Unexpected error in do_create_questions: {str(e)}")
         raise
-"""
 
 
 async def fetch_unmapped_image_sets(session: AsyncSession, batch_size: int):
