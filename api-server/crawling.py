@@ -82,9 +82,7 @@ async def crawl_image_urls_by_keyword(keyword: str, minimum_images: int):
     chrome_options.add_argument(f"user-agent={ua_selector.random()}")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
-    #driver = webdriver.Remote(options=chrome_options, command_executor=SELENIUM_REMOTE_URL)
-    # local webdriver
-    driver = webdriver.Chrome(options=chrome_options)
+    driver = webdriver.Remote(options=chrome_options, command_executor=SELENIUM_REMOTE_URL)
     image_urls = []
     trials = 0
     logger.info(f"Start: Crawling {keyword} image url")
@@ -101,7 +99,7 @@ async def crawl_image_urls_by_keyword(keyword: str, minimum_images: int):
             scroll_page(driver, scroll_pause_time=random.uniform(1.0, 3.0), num_scrolls=5)
 
             # 추가 대기 시간
-            time.sleep(0.5)
+            time.sleep(random.uniform(2, 4))
 
             soup = BeautifulSoup(driver.page_source, "html.parser")
             images = soup.select(".image_tile_bx img")
