@@ -53,13 +53,10 @@ class QuestionGenerator:
         for keyword_result in keyword_results:
             if content := keyword_result.contents[0]:
                 keyword_set = list(json.loads(content).values())
-
             else:
                 keyword_set = None
-
             keyword_sets.append(keyword_set)
             total_price += keyword_result.prices.input_price + keyword_result.prices.output_price
-
         return keyword_results
 
 

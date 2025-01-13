@@ -14,7 +14,7 @@ from funcy import retry
 
 MAX_CRAWL_TRIALS = 5  # 최대 크롤링 시도 횟수
 TARGET_URL_PREFIX = "https://search.pstatic.net/common/?src="
-SELENIUM_REMOTE_URL = "http://10.10.5.13:30409/wd/hub" #"http://selenium-chrome-service:4444/wd/hub"
+SELENIUM_REMOTE_URL = "http://10.10.5.13:30409/wd/hub"  # "http://selenium-chrome-service:4444/wd/hub"
 
 
 class CustomUserAgentSelector:
@@ -113,7 +113,7 @@ async def crawl_image_urls_by_keyword(keyword: str, minimum_images: int):
         driver.quit()
 
 
-class LocalCrawler:
+class LocalImageCrawler:
     """로컬 크롤러 클래스"""
 
     def __init__(self):
