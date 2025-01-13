@@ -1,30 +1,32 @@
-""" 크롤링한 데이터를 데이터베이스에 삽입하는 서비스 모듈 """
+"""크롤링한 데이터를 데이터베이스에 삽입하는 서비스 모듈"""
 
-import asyncio
 import json
-from concurrent.futures import ThreadPoolExecutor
 import random
 import time
+from concurrent.futures import ThreadPoolExecutor
 from typing import List, Set
-from loguru import logger
-from tqdm.asyncio import tqdm
-from sqlalchemy import select, func, update, and_
-from sqlalchemy.orm import selectinload
-from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.ext.asyncio import AsyncSession
+
+from config import CRAWLING_IMAGE_BATCH_SIZE, QUESTION_COUNT_BUFFER
 from crawling import crawl_image_urls_by_keyword
 from db_config import (
-    async_session_scope,
-    db_manager,
-    Keyword,
-    ImageURL,
-    KeywordImageMapping,
     ImageSet,
     ImageSetMapping,
+    ImageURL,
+    Intent,
+    Keyword,
+    KeywordImageMapping,
+    KeywordImageURLSet,
+    Query,
     Question,
+    async_session_scope,
+    db_manager,
 )
-from question_generator import q_generator, GptResponse
-from config import QUESTION_COUNT_BUFFER, CRAWLING_IMAGE_BATCH_SIZE
+from loguru import logger
+from sqlalchemy import and_, func, select, update
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+from tqdm.asyncio import tqdm
 
 # 전역 ThreadPoolExecutor 생성
 thread_pool = ThreadPoolExecutor()
@@ -43,7 +45,9 @@ async def insert_keywords_and_images(
         minimum_images (int, optional): 각 키워드당 크롤링할 최소 이미지 수. 기본값은 100.
     """
     search_words = generate_search_words(category, keywords)
-    logger.info(f"Inserting {len(keywords)} keywords and images for category '{category}'")
+    logger.info(
+        f"Inserting {len(keywords)} keywords and images for category '{category}'"
+    )
 
     async with session.begin():
         for word in tqdm(search_words, desc="Processing keywords"):
@@ -67,7 +71,9 @@ def generate_search_words(category: str, keywords: List[str]) -> List[str]:
     return search_words
 
 
-async def get_or_create_keyword(session: AsyncSession, keyword: str, category: str) -> Keyword:
+async def get_or_create_keyword(
+    session: AsyncSession, keyword: str, category: str
+) -> Keyword:
     """
     키워드 객체를 조회하거나 생성합니다.
 
@@ -90,7 +96,9 @@ async def get_or_create_keyword(session: AsyncSession, keyword: str, category: s
     return keyword_obj
 
 
-async def process_image_urls(session: AsyncSession, keyword_obj: Keyword, image_urls: List[str]) -> None:
+async def process_image_urls(
+    session: AsyncSession, keyword_obj: Keyword, image_urls: List[str]
+) -> None:
     """
     이미지 URL을 처리하고 데이터베이스에 삽입합니다.
 
@@ -107,7 +115,9 @@ async def process_image_urls(session: AsyncSession, keyword_obj: Keyword, image_
         image_url_obj = ImageURL(url=url)
         session.add(image_url_obj)
         await session.flush()
-        mapping = KeywordImageMapping(keyword_id=keyword_obj.id, image_url_id=image_url_obj.id)
+        mapping = KeywordImageMapping(
+            keyword_id=keyword_obj.id, image_url_id=image_url_obj.id
+        )
         session.add(mapping)
 
 
@@ -139,7 +149,10 @@ async def create_unique_image_set(session: AsyncSession, category: str):
     async with session.begin():
         # 1. 특정 카테고리에 해당하는 이미지 URL ID 조회
         image_url_query = (
-            select(KeywordImageMapping.image_url_id).join(Keyword).where(Keyword.category == category).distinct()
+            select(KeywordImageMapping.image_url_id)
+            .join(Keyword)
+            .where(Keyword.category == category)
+            .distinct()
         )
         result = await session.execute(image_url_query)
         image_url_ids = result.scalars().all()
@@ -188,7 +201,9 @@ async def create_unique_image_set(session: AsyncSession, category: str):
         logger.info(f"{size}장 세트: {count}개")
 
 
-async def do_create_keywords_images(category: str, keywords: List, minimum_images: int = CRAWLING_IMAGE_BATCH_SIZE):
+async def do_create_keywords_images(
+    category: str, keywords: List, minimum_images: int = CRAWLING_IMAGE_BATCH_SIZE
+):
     """키워드를 입력받아서 네이버 검색에서 이미지를 크롤링하고 데이터베이스에 삽입하는 함수
 
     Args:
@@ -202,9 +217,11 @@ async def do_create_keywords_images(category: str, keywords: List, minimum_image
         await create_unique_image_set(session, category)
 
 
+"""
 async def async_question_generate(urls: List[str]) -> GptResponse:
     loop = asyncio.get_running_loop()
     return await loop.run_in_executor(thread_pool, q_generator.generate, urls)
+
 
 
 async def do_create_questions(batch_size: int = 5):
@@ -218,7 +235,9 @@ async def do_create_questions(batch_size: int = 5):
 
                 for image_set in target_image_sets:
                     try:
-                        logger.info(f"Generating questions for {len(image_set['urls'])} images")
+                        logger.info(
+                            f"Generating questions for {len(image_set['urls'])} images"
+                        )
                         questions = await async_question_generate(image_set["urls"])
                         new_question = Question(
                             image_set_id=image_set["image_set"],
@@ -226,15 +245,21 @@ async def do_create_questions(batch_size: int = 5):
                             cost=questions.total_price,
                             created_dt=time.time(),
                         )
-                        logger.info(f"Generated questions for image set {image_set['image_set']}: {questions}")
+                        logger.info(
+                            f"Generated questions for image set {image_set['image_set']}: {questions}"
+                        )
                         session.add(new_question)
                     except Exception as e:  # pylint: disable=broad-except
-                        logger.error(f"Error processing image set {image_set['image_set']}: {str(e)}")
+                        logger.error(
+                            f"Error processing image set {image_set['image_set']}: {str(e)}"
+                        )
                         # TODO: 이미지 세트의 처리를 건너뛰고 다음으로 진행
                         continue
 
                 await session.commit()
-                logger.success(f"Successfully created questions for {len(target_image_sets)} image sets")
+                logger.success(
+                    f"Successfully created questions for {len(target_image_sets)} image sets"
+                )
 
             except SQLAlchemyError as e:
                 logger.error(f"Database error occurred: {str(e)}")
@@ -244,6 +269,7 @@ async def do_create_questions(batch_size: int = 5):
     except Exception as e:
         logger.error(f"Unexpected error in do_create_questions: {str(e)}")
         raise
+"""
 
 
 async def fetch_unmapped_image_sets(session: AsyncSession, batch_size: int):
@@ -278,7 +304,11 @@ async def fetch_unmapped_image_sets(session: AsyncSession, batch_size: int):
             if image_set_ids:
                 image_sets_with_mappings = (
                     select(ImageSet)
-                    .options(selectinload(ImageSet.image_set_mappings).selectinload(ImageSetMapping.image_url))
+                    .options(
+                        selectinload(ImageSet.image_set_mappings).selectinload(
+                            ImageSetMapping.image_url
+                        )
+                    )
                     .where(ImageSet.id.in_(image_set_ids))
                 )
 
@@ -289,7 +319,10 @@ async def fetch_unmapped_image_sets(session: AsyncSession, batch_size: int):
                 image_sets_with_urls = [
                     {
                         "image_set": image_set.id,
-                        "urls": [mapping.image_url.url for mapping in image_set.image_set_mappings],
+                        "urls": [
+                            mapping.image_url.url
+                            for mapping in image_set.image_set_mappings
+                        ],
                     }
                     for image_set in image_sets
                 ]
@@ -326,7 +359,68 @@ async def do_get_questions(image_count: int, token: str = "kb"):
         raise
 
 
-async def get_unused_image_set_info(session: AsyncSession, image_count: int = 0, token: str = "kb"):
+async def do_get_questions_v2(token: str = "kb"):
+    session_factory = db_manager.get_session_factory()
+    try:
+        async with async_session_scope(session_factory) as session:
+            try:
+                result = await generate_query_response_v2(session, token)
+                logger.info(result)
+                if result:
+                    return result
+                return {"message": "No unused image set available"}
+
+            except SQLAlchemyError as e:
+                logger.error(f"Database error occurred: {str(e)}")
+                await session.rollback()
+                raise
+
+    except Exception as e:
+        logger.error(f"Unexpected error in do_get_questions: {str(e)}")
+        raise
+
+
+async def generate_query_response_v2(session: AsyncSession, used_by: str):
+    # Randomly fetch an Intent record
+    intent_query = (
+        select(Intent).where(Intent.used_by == None).order_by(func.random()).limit(1)
+    )
+    result = await session.execute(intent_query)
+    intent_obj = result.scalar()
+
+    # Update the 'used_by' column for the selected intent
+    update_stmt = (
+        update(Intent).where(Intent.id == intent_obj.id).values(used_by=used_by)
+    )
+    await session.execute(update_stmt)
+
+    # Commit the changes explicitly
+    await session.commit()
+
+    # Fetch queries associated with the random intent
+    query = select(Query).where(Query.intent_id == intent_obj.id).limit(1)
+    result = await session.execute(query)
+    query_obj = result.scalar()
+
+    # Fetch keyword sets associated with the query
+    keyword_query = select(KeywordImageURLSet).where(
+        KeywordImageURLSet.id.in_(query_obj.keyword_image_url_set_ids)
+    )
+    keyword_result = await session.execute(keyword_query)
+    keyword_sets = keyword_result.scalars().all()
+
+    return {
+        "query": query_obj.query,
+        "datas": [
+            {"keyword": ks.keyword, "image_url": ks.image_url} for ks in keyword_sets
+        ],
+        "intent_id": intent_obj.id,
+    }
+
+
+async def get_unused_image_set_info(
+    session: AsyncSession, image_count: int = 0, token: str = "kb"
+):
     """사용되지 않은 이미지 세트 정보를 반환하는 함수
 
     Args:
@@ -355,8 +449,15 @@ async def get_unused_image_set_info(session: AsyncSession, image_count: int = 0,
 
             subquery = (
                 select(Question.id)
-                .join(image_count_subq, Question.image_set_id == image_count_subq.c.set_id)
-                .where(and_(Question.used_by == None, image_count_subq.c.image_count == image_count))
+                .join(
+                    image_count_subq, Question.image_set_id == image_count_subq.c.set_id
+                )
+                .where(
+                    and_(
+                        Question.used_by == None,
+                        image_count_subq.c.image_count == image_count,
+                    )
+                )
                 .order_by(func.random())
                 .limit(1)
                 .scalar_subquery()
@@ -382,7 +483,9 @@ async def get_unused_image_set_info(session: AsyncSession, image_count: int = 0,
                 .select_from(ImageSetMapping)
                 .join(ImageSet, ImageSet.id == ImageSetMapping.set_id)
                 .join(ImageURL, ImageURL.id == ImageSetMapping.image_url_id)
-                .join(KeywordImageMapping, KeywordImageMapping.image_url_id == ImageURL.id)
+                .join(
+                    KeywordImageMapping, KeywordImageMapping.image_url_id == ImageURL.id
+                )
                 .join(Keyword, Keyword.id == KeywordImageMapping.keyword_id)
                 .where(ImageSet.id == unused_question.image_set_id)
             )
@@ -391,7 +494,10 @@ async def get_unused_image_set_info(session: AsyncSession, image_count: int = 0,
             image_info_result = result.fetchall()
 
             # 3. 결과를 요청된 형식으로 구성
-            image_info = [{"keyword": row.keyword, "image_url": row.url} for row in image_info_result]
+            image_info = [
+                {"keyword": row.keyword, "image_url": row.url}
+                for row in image_info_result
+            ]
             questions = unused_question.questions
             result = {"image_info": image_info, "questions": questions}
 
@@ -422,12 +528,21 @@ async def do_create_batch_questions():
     session_factory = db_manager.get_session_factory()
     async with async_session_scope(session_factory) as session:
         # used_by가 비어있는 질문의 수를 카운트
-        query = select(func.count()).select_from(Question).where(Question.used_by.is_(None))
+        query = (
+            select(func.count()).select_from(Question).where(Question.used_by.is_(None))
+        )
         result = await session.execute(query)
         unused_count = result.scalar()
 
         if unused_count <= QUESTION_COUNT_BUFFER:
-            logger.warning(f"Creating questions! Current unused count: {unused_count}/{QUESTION_COUNT_BUFFER}")
+            logger.warning(
+                f"Creating questions! Current unused count: {unused_count}/{QUESTION_COUNT_BUFFER}"
+            )
             await do_create_questions()
         else:
-            print(f"Skipping question creation! Current unused count: {unused_count}. Good!")
+            print(
+                f"Skipping question creation! Current unused count: {unused_count}. Good!"
+            )
+            print(
+                f"Skipping question creation! Current unused count: {unused_count}. Good!"
+            )
