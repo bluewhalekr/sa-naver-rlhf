@@ -397,24 +397,29 @@ async def generate_query_response_v2(session: AsyncSession, used_by: str):
     await session.commit()
 
     # Fetch queries associated with the random intent
-    query = select(Query).where(Query.intent_id == intent_obj.id).limit(1)
+    query = select(Query).where(Query.intent_id == intent_obj.id)
     result = await session.execute(query)
-    query_obj = result.scalar()
+    query_objs = result.scalars().all()
 
     # Fetch keyword sets associated with the query
-    keyword_query = select(KeywordImageURLSet).where(
-        KeywordImageURLSet.id.in_(query_obj.keyword_image_url_set_ids)
-    )
-    keyword_result = await session.execute(keyword_query)
-    keyword_sets = keyword_result.scalars().all()
+    results = []
+    for query_obj in query_objs:
+        keyword_query = select(KeywordImageURLSet).where(
+            KeywordImageURLSet.id.in_(query_obj.keyword_image_url_set_ids)
+        )
+        keyword_result = await session.execute(keyword_query)
+        keyword_sets = keyword_result.scalars().all()
 
-    return {
-        "query": query_obj.query,
-        "datas": [
-            {"keyword": ks.keyword, "image_url": ks.image_url} for ks in keyword_sets
-        ],
-        "intent_id": intent_obj.id,
-    }
+        result = {
+            "query": query_obj.query,
+            "datas": [
+                {"keyword": ks.keyword, "image_url": ks.image_url} for ks in keyword_sets
+            ],
+            "intent_id": intent_obj.id,
+        }
+        results.append(result)
+
+    return results
 
 
 async def get_unused_image_set_info(
