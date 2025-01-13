@@ -59,5 +59,39 @@ class QuestionGenerator:
             total_price += keyword_result.prices.input_price + keyword_result.prices.output_price
         return keyword_results
 
+    def _filter_keyword_image_urls(self, keyword_image_urls):
+        """
+        Filter the keyword image urls
+        """
+        filtered_keyword_image_urls = []
+        for keyword_image_url in keyword_image_urls:
+            image_url = keyword_image_url['image_url']
+
+            if image_url is not None and image_url != '':
+                filtered_keyword_image_urls.append(keyword_image_url)
+
+        return filtered_keyword_image_urls
+
+    def make_image_queries(self, ingredients: list):
+        input_messages = []
+        for persona, intent, keyword_image_urls in ingredients:
+            filtered_keyword_image_urls = self._filter_keyword_image_urls(keyword_image_urls)
+
+            keywords = [d['keyword'] for d in filtered_keyword_image_urls]
+            image_urls = [d['image_url'] for d in filtered_keyword_image_urls]
+
+            system_message = to_system_message(IMAGE_QUERY_SYSTEM_PROMPT)
+            user_message = to_user_message(
+                text=IMAGE_QUERY_USER_PROMPT.format(
+                    persona=persona,
+                    intent=intent,
+                    keywords=keywords
+                ),
+                image_urls=image_urls
+            )
+            input_messages.append([system_message, user_message])
+
+        queries_results = self.assistant.batch_chat(input_messages, response_format=UserQueries)
+        return queries_results
 
 

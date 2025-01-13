@@ -26,7 +26,7 @@ class ImageKeywordSets(BaseModel):
 
 
 class UserQuery(BaseModel):
-    image_indexes: str
+    image_index_choices: List[int]
     user_query: str
 
 
