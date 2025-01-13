@@ -1,15 +1,15 @@
-import os
 import json
+import os
 from typing import List, Optional
-from loguru import logger
+
 import openai
+from config import AZURE_ENDPOINT, OPENAI_API_KEY, OPENAI_API_VERSION
+from loguru import logger
 from pydantic import BaseModel
 
-from config import AZURE_ENDPOINT, OPENAI_API_KEY, OPENAI_API_VERSION
-
 GPT_MODEL = "gpt-4o"
-GPT_INPUT_PRICE = 5 * 0.000001
-GPT_OUTPUT_PRICE = 15 * 0.000001
+GPT_INPUT_PRICE = 2.5 * 0.000001
+GPT_OUTPUT_PRICE = 10 * 0.000001
 
 
 def to_user_message(text: str, image_urls: Optional[List[str]] = None):
@@ -22,7 +22,9 @@ def to_user_message(text: str, image_urls: Optional[List[str]] = None):
 
     if image_urls:
         for image_url in image_urls:
-            user_message["content"].append({"type": "image_url", "image_url": {"url": image_url, "detail": "high"}})
+            user_message["content"].append(
+                {"type": "image_url", "image_url": {"url": image_url, "detail": "high"}}
+            )
 
     return user_message
 
@@ -66,7 +68,13 @@ class QuestionGenerator:
         "연관 짓기 (1)",
         "연관 짓기 (2)",
     ]
-    one_images_question_types = ["형태", "연산", "추천", "형식화 (리스트, 표)", "난이도, 언어"]
+    one_images_question_types = [
+        "형태",
+        "연산",
+        "추천",
+        "형식화 (리스트, 표)",
+        "난이도, 언어",
+    ]
 
     def __init__(self):
         self.openai_client = openai.AzureOpenAI(
@@ -97,7 +105,8 @@ class QuestionGenerator:
         output_price = GPT_OUTPUT_PRICE * response.usage.completion_tokens
 
         return GptResponse(
-            questions=list(json.loads(response_content).values()), total_price=input_price + output_price
+            questions=list(json.loads(response_content).values()),
+            total_price=input_price + output_price,
         )
 
 

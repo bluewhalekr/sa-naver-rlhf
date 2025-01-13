@@ -11,7 +11,7 @@ from requests.exceptions import HTTPError
 from logger import logger
 
 # 데이터 가져올 수 있는 API의 url
-API_URL = "https://task1.smart-agent.bluewhale.kr/v1/questions"
+API_URL = "https://task1.smart-agent.bluewhale.kr/v2/questions"
 
 WEB_ROOT = os.path.dirname(__file__)
 TOKEN_PATH = "/app/configs/token.json"
@@ -29,9 +29,14 @@ class ImageInfo(BaseModel):
     image_url: str
 
 
-class ImageQuestions(BaseModel):
-    image_info: List[ImageInfo]
-    questions: List[str]
+class ImageQuery(BaseModel):
+    query: str
+    image_infos: List[ImageInfo]
+
+
+class ImageQueries(BaseModel):
+    intent_id: int
+    image_queries: List[ImageQuery]
 
 
 @st.cache_resource(ttl=timedelta(hours=1))
@@ -62,13 +67,13 @@ def open_image_url(image_url) -> bytes:
 
 
 @st.cache_data(ttl=timedelta(seconds=BTN_WAITING_TIME-1), hash_funcs={int: lambda x: True})
-def get_image_questions(user_id: str, image_num: int) -> dict:
-    logger.info(f"{st.session_state['username'].rjust(12)}| request image questions. nums: {image_num}")
+def get_image_questions(user_id: str) -> dict:
+    logger.info(f"{st.session_state['username'].rjust(12)}")
 
     headers = {
         "Authorization": f"Bearer {user_id}"
     }
-    url_with_params = f"{API_URL}?image_count={image_num}"
+    url_with_params = f"{API_URL}"
 
     try:
         response = httpx_client.get(url_with_params, headers=headers)
@@ -96,50 +101,30 @@ def get_user_token(username: str) -> str:
 
 
 @st.fragment
-def radio_button():
-    st.logo(ICON_PATH, icon_image=ICON_PATH)  # radio 버튼 action이 실행될 때마다 로고가 사라지는 이슈 => logo 함수 여기에 위치
-    image_num = st.radio("이미지 개수", [1, 2, 3], horizontal=True)
-
-    return image_num
-
-
-@st.fragment
-def btn_click_action(image_num):
+def btn_click_action():
     username = st.session_state['username']
     logger.info(f"{username.rjust(12)}| button clicked")
 
     token = get_user_token(username)
 
     with st.spinner("이미지와 질문을 가져오는 중..."):
-        image_questions = get_image_questions(token, image_num)
-        image_questions = ImageQuestions(**image_questions)
-        image_num = len(image_questions.image_info)
+        image_queries = get_image_questions(token)
+        image_queries = ImageQueries(**image_queries).image_queries
 
-        # Display images
-        st.markdown("### 이미지")
+        tab_labels = [str(q_i+1) for q_i in range(len(image_queries))]
+        tabs = st.tabs(tab_labels)
+        for tab, image_query in zip(tabs, image_queries):
+            columns = tab.columns(3, vertical_alignment="bottom")
+            for image_col, image_info in zip(columns, image_query.image_infos):
+                image_data = open_image_url(image_info.image_url)
 
-        columns = st.columns(image_num, vertical_alignment="bottom")
-        for image_col, image_info in zip(columns, image_questions.image_info):
-            image_data = open_image_url(image_info.image_url)
+                image_col.image(image_data)
 
-            image_col.image(image_data)
+                image_col.json(image_info.model_dump())
 
-            image_col.write("이미지 URL:")
-            image_col.code(image_info.image_url, language="html")
-
-            image_col.write("검색어:")
-            image_col.code(image_info.keyword, language="html")
-
-        # Display questions
-        st.markdown("---")
-        st.markdown("### 질문")
-
-        col1, col2 = st.columns(2)
-        for i, question in enumerate(image_questions.questions):
-            col = col1 if i % 2 == 0 else col2
-            with col:
-                with st.chat_message("user"):
-                    st.code(question, language="html")
+            query = image_query.query
+            with tab.chat_message("user"):
+                st.code(query, language="html")
 
 
 def btn_click_callback():
@@ -167,10 +152,8 @@ def btn():
 
 @st.fragment
 def q_gen():
-    image_num = radio_button()
-
     if btn():
-        btn_click_action(image_num)
+        btn_click_action()
         btn_init()
 
 

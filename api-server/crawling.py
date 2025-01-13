@@ -1,15 +1,15 @@
 """네이버 이미지 검색 결과를 크롤링하는 모듈"""
 
-import time
 import random
+import time
+
+from bs4 import BeautifulSoup
 from loguru import logger
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from bs4 import BeautifulSoup
-
+from selenium.webdriver.support.ui import WebDriverWait
 
 MAX_CRAWL_TRIALS = 5  # 최대 크롤링 시도 횟수
 TARGET_URL_PREFIX = "https://search.pstatic.net/common/?src="
@@ -81,7 +81,9 @@ async def crawl_image_urls_by_keyword(keyword: str, minimum_images: int):
     chrome_options.add_argument(f"user-agent={ua_selector.random()}")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
-    driver = webdriver.Remote(options=chrome_options, command_executor=SELENIUM_REMOTE_URL)
+    driver = webdriver.Remote(
+        options=chrome_options, command_executor=SELENIUM_REMOTE_URL
+    )
     image_urls = []
     trials = 0
     logger.info(f"Start: Crawling {keyword} image url")
@@ -91,11 +93,15 @@ async def crawl_image_urls_by_keyword(keyword: str, minimum_images: int):
         driver.get(url)
 
         # 페이지 로딩 대기
-        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "image_tile_bx")))
+        WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.CLASS_NAME, "image_tile_bx"))
+        )
 
         while len(image_urls) < minimum_images and trials < MAX_CRAWL_TRIALS:
             # 스크롤 수행
-            scroll_page(driver, scroll_pause_time=random.uniform(1.0, 3.0), num_scrolls=5)
+            scroll_page(
+                driver, scroll_pause_time=random.uniform(1.0, 3.0), num_scrolls=5
+            )
 
             # 추가 대기 시간
             time.sleep(random.uniform(2, 4))
@@ -103,10 +109,14 @@ async def crawl_image_urls_by_keyword(keyword: str, minimum_images: int):
             soup = BeautifulSoup(driver.page_source, "html.parser")
             images = soup.select(".image_tile_bx img")
             image_urls = [
-                img["src"] for img in images if "src" in img.attrs and img["src"].startswith(TARGET_URL_PREFIX)
+                img["src"]
+                for img in images
+                if "src" in img.attrs and img["src"].startswith(TARGET_URL_PREFIX)
             ]
             trials += 1
-            logger.info(f"Crawling {keyword} image url: Trial {trials}: Found {len(image_urls)} images")
+            logger.info(
+                f"Crawling {keyword} image url: Trial {trials}: Found {len(image_urls)} images"
+            )
         return image_urls
     finally:
         driver.quit()
