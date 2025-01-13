@@ -402,7 +402,7 @@ async def generate_query_response_v2(session: AsyncSession, used_by: str):
     query_objs = result.scalars().all()
 
     # Fetch keyword sets associated with the query
-    results = []
+    image_queries = []
     for query_obj in query_objs:
         keyword_query = select(KeywordImageURLSet).where(
             KeywordImageURLSet.id.in_(query_obj.keyword_image_url_set_ids)
@@ -410,16 +410,18 @@ async def generate_query_response_v2(session: AsyncSession, used_by: str):
         keyword_result = await session.execute(keyword_query)
         keyword_sets = keyword_result.scalars().all()
 
-        result = {
+        image_query = {
             "query": query_obj.query,
-            "datas": [
+            "image_infos": [
                 {"keyword": ks.keyword, "image_url": ks.image_url} for ks in keyword_sets
             ],
-            "intent_id": intent_obj.id,
         }
-        results.append(result)
+        image_queries.append(image_query)
 
-    return results
+    return {
+        "intent_id": intent_obj.id,
+        "image_queries": image_queries,
+    }
 
 
 async def get_unused_image_set_info(
