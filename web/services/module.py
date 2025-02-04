@@ -27,7 +27,7 @@ class ApiClient:
 
         except httpx.HTTPStatusError as e:
             logger.error(f"An error occurred: {e}")
-            return None
+            raise e
 
     def post(self, url, data=None):
         try:
@@ -37,4 +37,4 @@ class ApiClient:
 
         except httpx.HTTPStatusError as e:
             logger.error(f"An error occurred: {e}")
-            return None
+            raise e
