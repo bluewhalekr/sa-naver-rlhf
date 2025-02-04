@@ -14,7 +14,10 @@ def login_view():
     token = login_form.text_input('Password', type='password')
 
     if login_form.form_submit_button('Login'):
-        if authenticate(username, token):
+        if not username or not token:
+            st.warning("username or password is empty")
+
+        elif authenticate(username, token):
             st.session_state['authentication_status'] = True
             st.session_state['username'] = username
             st.session_state['token'] = token
@@ -23,6 +26,7 @@ def login_view():
         else:
             st.warning("wrong username or password")
 
+    if st.session_state.get('authentication_status'):
         st.rerun()
 
 
