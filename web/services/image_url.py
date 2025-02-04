@@ -1,11 +1,10 @@
 from typing import List
 
-from config import IMAGE_URL_API_URL
+from config import IMAGE_URL_API_URL, TEST_MODE
 from logger import logger
 from models import ImageUrlInfo, ImageUrlInfosRequestData, ImageUrlInfosResponse
 from services.module import ApiClient
 
-TEST_MODE = True
 MOCK_IMAGE_URL_INFOS = {
     'persona': '책을 좋아하는 사람',
     'image_infos': [

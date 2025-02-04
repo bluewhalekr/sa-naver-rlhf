@@ -4,12 +4,11 @@ from typing import List
 
 import streamlit as st
 
-from config import QUESTION_API_URL
+from config import QUESTION_API_URL, TEST_MODE
 from logger import logger
 from models import ImageUrlInfo, ImageQuestion, ImageQuestionsRequestData, ImageQuestionsResponse
 from services.module import ApiClient
 
-TEST_MODE = True
 MOCK_QUESTIONS = {
     "questions": [
         {
@@ -59,7 +58,6 @@ def request_questions(req_data: dict) -> dict:
 
     else:
         api_client = ApiClient()
-
         json_response = api_client.post(QUESTION_API_URL, data=req_data)
 
     return json_response

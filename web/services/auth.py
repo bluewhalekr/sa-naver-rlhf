@@ -1,9 +1,8 @@
-from config import AUTH_API_URL
+from config import AUTH_API_URL, TEST_MODE
 from logger import logger
 from models import AuthRequestData, AuthResponse
 from services.module import ApiClient
 
-TEST_MODE = True
 MOCK_AUTH_RESPONSE = {
     "status": "success",
 }

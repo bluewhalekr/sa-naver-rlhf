@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+TEST_MODE = True if os.getenv("TEST_MODE", "").lower() == "true" else False
 
 WEB_ROOT = os.path.abspath(os.path.dirname(__file__))
 sys.path.append(WEB_ROOT)
