@@ -14,6 +14,7 @@ def question_type_checkbox():
     return question_type
 
 
+@st.fragment
 def questions_view(choices, question_type):
     username = st.session_state['username']
     questions = get_questions(choices, question_type, username)
@@ -47,12 +48,8 @@ def image_checkbox_view(image_urls):
 
 
 @st.fragment
-def image_button_click_action():
-    logo_fragment()
-
+def image_choice_view(image_url_infos):
     username = st.session_state['username']
-
-    image_url_infos = get_image_url_infos(username)
     image_num = len(image_url_infos)
 
     choices = []
@@ -73,6 +70,15 @@ def image_button_click_action():
 
     else:
         st.info("3개 이상 5개 이하의 이미지를 선택해주세요.")
+
+
+@st.fragment
+def image_button_click_action():
+    logo_fragment()
+
+    username = st.session_state['username']
+    image_url_infos = get_image_url_infos(username)
+    image_choice_view(image_url_infos)
 
 
 def serve_view():
