@@ -1,6 +1,7 @@
 from typing import List
 
 from config import IMAGE_URL_API_URL
+from logger import logger
 from models import ImageUrlInfo, ImageUrlInfosRequestData, ImageUrlInfosResponse
 from services.module import ApiClient
 
@@ -37,6 +38,8 @@ MOCK_IMAGE_URL_INFOS = {
 
 
 def request_image_url_infos(username: str) -> ImageUrlInfosResponse:
+    logger.info(f"{username.rjust(12)}| request_questions")
+
     if TEST_MODE:
         json_response = MOCK_IMAGE_URL_INFOS
 

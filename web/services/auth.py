@@ -1,4 +1,5 @@
 from config import AUTH_API_URL
+from logger import logger
 from models import AuthRequestData, AuthResponse
 from services.module import ApiClient
 
@@ -9,6 +10,8 @@ MOCK_AUTH_RESPONSE = {
 
 
 def request_authenticate(username: str, token: str) -> AuthResponse:
+    logger.info(f"{username.rjust(12)}| request_authenticate")
+
     if TEST_MODE:
         json_response = MOCK_AUTH_RESPONSE
 
