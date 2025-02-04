@@ -37,7 +37,7 @@ MOCK_IMAGE_URL_INFOS = {
 
 
 def request_image_url_infos(username: str) -> ImageUrlInfosResponse:
-    logger.info(f"{username.rjust(12)}| request_questions")
+    logger.info(f"{username.rjust(12)}| request_image_urls")
 
     if TEST_MODE:
         json_response = MOCK_IMAGE_URL_INFOS
