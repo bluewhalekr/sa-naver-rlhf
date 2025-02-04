@@ -47,8 +47,15 @@ MOCK_QUESTIONS = {
 }
 
 
-@st.cache_data(ttl=timedelta(seconds=10), show_spinner=False)
-def request_questions(req_data: dict) -> dict:
+def hash_func(d):
+    keywords = [image_url_info['keyword'].replace(' ', '') for image_url_info in d['choices']]
+    keywords.sort()
+    hash_str = f"{d['username']}:{d['question_type']}:{','.join(keywords)}"
+    return hash_str
+
+
+@st.cache_data(ttl=timedelta(seconds=10), hash_funcs={dict: hash_func}, show_spinner=False)
+def request_questions(req_data: dict) -> str:
     username = st.session_state.get('username', 'unknown')
     logger.info(f"{username.rjust(12)}| request_questions")
 
