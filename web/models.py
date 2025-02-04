@@ -15,7 +15,7 @@ class ImageQuestion(BaseModel):
 # ----------------- API 모델 -----------------
 class AuthRequestData(BaseModel):
     username: str
-    password: str
+    token: str
 
 
 class AuthResponse(BaseModel):
