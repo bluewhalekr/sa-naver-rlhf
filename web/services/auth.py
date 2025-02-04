@@ -17,7 +17,7 @@ def request_authenticate(username: str, token: str) -> AuthResponse:
     else:
         api_client = ApiClient()
 
-        req_data = AuthRequestData(username=username, token=token)
+        req_data = AuthRequestData(user_id=username, token=token)
         json_response = api_client.post(AUTH_API_URL, data=req_data.dict())
 
     return AuthResponse(**json_response)
