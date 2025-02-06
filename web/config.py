@@ -14,8 +14,8 @@ ICON_PATH = 'assets/AIMMO-시그니처 로고_바이올렛+블랙.png'  # os.pat
 ICON_PATH = os.path.abspath(ICON_PATH)
 
 BASE_API_URL = "https://task1.smart-agent.bluewhale.kr"
-AUTH_API_URL = f"{BASE_API_URL}/v2/auth"
-IMAGE_URL_API_URL = f"{BASE_API_URL}/v2/persona-image-infos"
-QUESTION_API_URL = f"{BASE_API_URL}/v2/image-questions"
+AUTH_API_URL = f"{BASE_API_URL}/v3/auth"
+IMAGE_URL_API_URL = f"{BASE_API_URL}/v3/persona-image-infos"
+QUESTION_API_URL = f"{BASE_API_URL}/v3/image-questions"
 
 BTN_WAITING_TIME = 10
