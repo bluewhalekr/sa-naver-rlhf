@@ -8,7 +8,7 @@ class ImageUrlInfo(BaseModel):
 
 
 class ImageQuestion(BaseModel):
-    text: str
+    question: str
     image_infos: List[ImageUrlInfo] = []
 
 
@@ -23,7 +23,7 @@ class AuthResponse(BaseModel):
 
 
 class ImageUrlInfosRequestData(BaseModel):
-    username: str
+    user_id: str
 
 
 class ImageUrlInfosResponse(BaseModel):
@@ -32,18 +32,14 @@ class ImageUrlInfosResponse(BaseModel):
 
 
 class ImageQuestionsRequestData(BaseModel):
-    username: str
+    user_id: str
+    persona: str
     choices: List[ImageUrlInfo]
     question_type: str
 
 
-class QuestionWithImageKeywords(BaseModel):
-    question: str
-    image_keywords: List[str] = []
-
-
 class ImageQuestionsResponse(BaseModel):
-    questions: List[QuestionWithImageKeywords]
+    questions: List[ImageQuestion]
 
 
 # 프롬프트 적용 요청 API 모델

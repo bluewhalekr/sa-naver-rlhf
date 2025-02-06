@@ -31,7 +31,7 @@ class ApiClient:
 
     def post(self, url, data=None):
         try:
-            response = self.client.post(url, json=data)
+            response = self.client.post(url, json=data, timeout=30)
             response.raise_for_status()
             return response.json()
 

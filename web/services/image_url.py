@@ -36,7 +36,7 @@ MOCK_IMAGE_URL_INFOS = {
 }
 
 
-def request_image_url_infos(username: str) -> ImageUrlInfosResponse:
+def request_persona_image_infos(username: str) -> ImageUrlInfosResponse:
     logger.info(f"{username.rjust(12)}| request_image_urls")
 
     if TEST_MODE:
@@ -45,12 +45,12 @@ def request_image_url_infos(username: str) -> ImageUrlInfosResponse:
     else:
         api_client = ApiClient()
 
-        req_data = ImageUrlInfosRequestData(username=username)
-        json_response = api_client.post(IMAGE_URL_API_URL, data=req_data.dict())
+        req_data = ImageUrlInfosRequestData(user_id=username)
+        json_response = api_client.get(IMAGE_URL_API_URL, params=req_data.dict())
 
     return ImageUrlInfosResponse(**json_response)
 
 
-def get_image_url_infos(username) -> List[ImageUrlInfo]:
-    response = request_image_url_infos(username)
-    return response.image_infos
+def get_persona_image_infos(username) -> List[ImageUrlInfo]:
+    response = request_persona_image_infos(username)
+    return response

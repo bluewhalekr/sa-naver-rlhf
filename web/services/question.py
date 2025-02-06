@@ -54,8 +54,8 @@ def hash_func(d):
     return hash_str
 
 
-@st.cache_data(ttl=timedelta(seconds=10), hash_funcs={dict: hash_func}, show_spinner=False)
-def request_questions(req_data: dict) -> str:
+@st.cache_data(ttl=timedelta(seconds=10), show_spinner=False)
+def request_questions(req_data: dict):
     username = st.session_state.get('username', 'unknown')
     logger.info(f"{username.rjust(12)}| request_questions")
 
@@ -70,22 +70,11 @@ def request_questions(req_data: dict) -> str:
     return json_response
 
 
-def get_questions(choices: List[ImageUrlInfo], question_type: str, username: str) -> List[ImageQuestion]:
+def get_questions(persona: str, choices: List[ImageUrlInfo], question_type: str, username: str) -> List[ImageQuestion]:
     keyword_to_image_url = {choice.keyword: choice.image_url for choice in choices}
 
-    req_data = ImageQuestionsRequestData(username=username, choices=choices, question_type=question_type)
+    req_data = ImageQuestionsRequestData(user_id=username, persona=persona, choices=choices, question_type=question_type)
     json_response = request_questions(req_data.dict())
     response = ImageQuestionsResponse(**json_response)
 
-    image_questions = []
-    for question in response.questions:
-        image_infos = []
-        for keyword in question.image_keywords:
-            image_url = keyword_to_image_url[keyword]
-            image_url_info = ImageUrlInfo(keyword=keyword, image_url=image_url)
-            image_infos.append(image_url_info)
-
-        image_question = ImageQuestion(text=question.question, image_infos=image_infos)
-        image_questions.append(image_question)
-
-    return image_questions
+    return response.questions

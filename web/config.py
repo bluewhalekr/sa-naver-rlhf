@@ -15,7 +15,7 @@ ICON_PATH = os.path.abspath(ICON_PATH)
 
 BASE_API_URL = "https://task1.smart-agent.bluewhale.kr"
 AUTH_API_URL = f"{BASE_API_URL}/v2/auth"
-IMAGE_URL_API_URL = f"{BASE_API_URL}/v2/image-urls"
-QUESTION_API_URL = f"{BASE_API_URL}/v2/questions"
+IMAGE_URL_API_URL = f"{BASE_API_URL}/v2/persona-image-infos"
+QUESTION_API_URL = f"{BASE_API_URL}/v2/image-questions"
 
 BTN_WAITING_TIME = 10

@@ -1,7 +1,7 @@
 import streamlit as st
 
 from logger import logger
-from services.image_url import get_image_url_infos
+from services.image_url import get_persona_image_infos
 from services.question import get_questions
 from streamlit_utils import image_show, lazy_button, logo_fragment
 
@@ -10,20 +10,22 @@ from streamlit_utils import image_show, lazy_button, logo_fragment
 def question_type_checkbox():
     logo_fragment()
 
-    question_type = st.radio("질문 유형", ["SM", "MS", "MM"], horizontal=True)
+    question_type = st.radio("질문 유형", ["SM", "MS", "MM-1", "MM-2"], horizontal=True)
     return question_type
 
 
 @st.fragment
 def questions_view(choices, question_type):
     username = st.session_state['username']
-    questions = get_questions(choices, question_type, username)
+    persona = st.session_state['persona']
+    with st.spinner("질문을 가져오는 중..."):
+        questions = get_questions(persona, choices, question_type, username)
 
     for image_question in questions:
         with st.chat_message("user"):
             col1, col2 = st.columns([1, 1], border=False, vertical_alignment="top", gap="small")
             with col1:
-                st.code(image_question.text)
+                st.code(image_question.question)
 
             with col2:
                 if image_question.image_infos:
@@ -77,8 +79,9 @@ def image_button_click_action():
     logo_fragment()
 
     username = st.session_state['username']
-    image_url_infos = get_image_url_infos(username)
-    image_choice_view(image_url_infos)
+    persona_image_infos = get_persona_image_infos(username)
+    st.session_state['persona'] = persona_image_infos.persona
+    image_choice_view(persona_image_infos.image_infos)
 
 
 def serve_view():
