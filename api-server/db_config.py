@@ -15,7 +15,7 @@ from sqlalchemy import (
     String,
     UniqueConstraint,
 )
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
 
@@ -147,7 +147,7 @@ class AsyncDatabaseManager:
                 "server_settings": {"client_encoding": "utf8"},
             },
         )
-        self.SessionFactory = sessionmaker(
+        self.SessionFactory = async_sessionmaker(
             self.engine, class_=AsyncSession, expire_on_commit=False
         )
 
