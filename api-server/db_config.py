@@ -51,9 +51,19 @@ class ImageURL(Base):
 
 class Persona(Base):
     __tablename__ = "personas"
-    __table_args__ = {"schema": "naver_rlhf_v2"}
+    __table_args__ = {"schema": "naver_rlhf_v3"}
     id = Column(Integer, primary_key=True, index=True)
     persona = Column(String)
+    used_by = Column(String)
+
+
+class KeywordImageURL(Base):
+    __tablename__ = "image_urls"
+    __table_args__ = {"schema": "naver_rlhf_v3"}
+    id = Column(Integer, primary_key=True, index=True)
+    persona_id = Column(Integer, ForeignKey("personas.id"))
+    keyword = Column(String)
+    image_url = Column(String)
 
 
 class KeywordImageURLSet(Base):
