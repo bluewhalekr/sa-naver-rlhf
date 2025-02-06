@@ -9,6 +9,7 @@ from typing import List, Set
 
 from config import CRAWLING_IMAGE_BATCH_SIZE, QUESTION_COUNT_BUFFER
 from crawling import crawl_image_urls_by_keyword
+from question_generator_v3 import QuestionGenerator
 from db_config import (
     ImageSet,
     ImageSetMapping,
@@ -19,6 +20,9 @@ from db_config import (
     KeywordImageURLSet,
     Query,
     Question,
+    Token,
+    Persona,
+    KeywordImageURL,
     async_session_scope,
     db_manager,
 )
@@ -553,3 +557,127 @@ async def do_create_batch_questions():
             print(
                 f"Skipping question creation! Current unused count: {unused_count}. Good!"
             )
+
+
+async def do_auth_user(user_id: str, token: str):
+    """사용자 인증을 처리하는 함수
+
+    Args:
+        user_id (str): 사용자 이름
+        token (str): 사용자 토큰
+
+    Returns:
+        dict: 인증 결과 {"status": "success" or "fail"}
+    """
+    session_factory = db_manager.get_session_factory()
+    async with async_session_scope(session_factory) as session:
+        try:
+            query = select(Token).where(
+                and_(Token.user_id == user_id, Token.token == token, Token.is_active == True)
+            )
+            result = await session.execute(query)
+            user_obj = result.scalar_one_or_none()
+
+            if not user_obj:
+                return {"status": "fail"}
+
+            return {"status": "success"}
+        except SQLAlchemyError as e:
+            await session.rollback()
+            raise e
+
+async def do_get_persona_image_infos(
+    user_id: str = "kb"
+):
+    """사용되지 않은 이미지 세트 정보를 반환하는 함수
+
+    Args:
+        session (AsyncSession): SQLAlchemy 비동기 세션 객체
+        user_id (str): 사용자 이름
+
+    Returns:
+        dict: persona, keyword, image_url 정보
+            ex) {
+                    "persona": "...",
+                    "image_infos": [
+                        {"keyword": "...", "image_url": "..."},
+                        ...
+                    ]
+    """
+    session_factory = db_manager.get_session_factory()
+    async with async_session_scope(session_factory) as session:
+        try:
+            # persona 중에서 used_by가 null인 것들 중 하나를 무작위로 선택
+            # 선택된 persona의 id를 사용하여 관련된 KeywordImageURL을 모두 조회
+            # 만약 하나라도 image_url이 비어있는 경우, 다른 persona를 선택하여 다시 시도
+            # 모든 image_url이 존재하는 경우, 해당 persona의 used_by를 user_id로 업데이트
+            # 결과를 요청된 형식으로 구성하여 반환
+            persona_query = (
+                select(Persona)
+                .where(Persona.used_by == None)
+                .order_by(func.random())
+                .limit(1)
+            )
+            result = await session.execute(persona_query)
+            persona = result.scalar_one_or_none()
+
+            if not persona:
+                return None
+
+            keyword_image_url_query = (
+                select(KeywordImageURL)
+                .where(KeywordImageURL.persona_id == persona.id)
+            )
+            result = await session.execute(keyword_image_url_query)
+            keyword_image_urls = result.scalars().all()
+
+            if not keyword_image_urls:
+                return None
+
+            for keyword_image_url in keyword_image_urls:
+                if not keyword_image_url.image_url:
+                    return None
+
+            update_stmt = (
+                update(Persona)
+                .where(Persona.id == persona.id)
+                .values(used_by=user_id)
+            )
+
+            await session.execute(update_stmt)
+            await session.commit()
+
+            image_infos = [
+                {"keyword": ki.keyword, "image_url": ki.image_url}
+                for ki in keyword_image_urls
+            ]
+
+            return {"persona": persona.persona, "image_infos": image_infos}
+
+        except SQLAlchemyError as e:
+            await session.rollback()
+            raise e
+
+
+async def generate_and_get_image_questions(
+    user_id: str, persona: str, choices: List, question_type: str
+):
+    """이미지 선택지를 받아 질문을 생성하고 반환하는 함수"""
+    question_generator = QuestionGenerator()
+    assistant_response = await question_generator.execute(persona, choices, question_type)
+    result = json.loads(assistant_response)["contents"][0]
+
+    keyword_to_image_url = {choice.keyword: choice.image_url for choice in choices}
+
+    questions = []
+    for d in list(result.values()):
+        keywords = d["첨부할_이미지의_검색어"]
+        image_infos = [{"keyword": keyword, "image_url": keyword_to_image_url[keyword]} for keyword in keywords]
+
+        question = {
+            "question": d["사용자_질문"],
+            "image_infos": image_infos
+        }
+        questions.append(question)
+
+    return {'questions': questions}
