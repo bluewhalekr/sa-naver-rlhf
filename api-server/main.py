@@ -6,12 +6,15 @@ from auth import verify_admin_user, verify_user
 from db_config import db_manager
 from fastapi import BackgroundTasks, Depends, FastAPI, Request
 from loguru import logger
-from models import KeywordsRequest
+from models import KeywordsRequest, AuthRequest, ImageQuestionsRequest
 from services import (
     do_create_batch_questions,
     do_create_keywords_images,
     do_get_questions,
     do_get_questions_v2,
+    do_auth_user,
+    do_get_persona_image_infos,
+    generate_and_get_image_questions,
 )
 
 logger.remove()  # 기본 핸들러 제거
@@ -69,6 +72,32 @@ async def get_questions(image_count: int = 0, token: str = Depends(verify_user))
 async def get_questions_v2(token: str = Depends(verify_user)):
     """Get questions"""
     result = await do_get_questions_v2(token)
+    return result
+
+
+@app.post("/v3/auth")
+async def auth_user(req: AuthRequest):
+    """Authenticate user"""
+    result = await do_auth_user(req.user_id, req.token)
+    return result
+
+
+@app.get("/v3/persona-image-infos")
+async def get_persona_image_infos(user_id: str):
+    """Get persona image infos"""
+    result = await do_get_persona_image_infos(user_id)
+    return result
+
+
+@app.post("/v3/image-questions")
+async def generate_image_questions(req: ImageQuestionsRequest):
+    """Generate image questions"""
+    result = await generate_and_get_image_questions(
+        req.user_id,
+        req.persona,
+        req.choices,
+        req.question_type
+    )
     return result
 
 
