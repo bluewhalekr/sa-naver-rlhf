@@ -56,3 +56,21 @@ class Query(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class AuthRequest(BaseModel):
+    user_id: str
+    token: str
+
+    class Config:
+        from_attributes = True
+
+
+class ImageQuestionsRequest(BaseModel):
+    user_id: str
+    persona: str
+    choices: List[ImageInfo]
+    question_type: str
+
+    class Config:
+        from_attributes = True
