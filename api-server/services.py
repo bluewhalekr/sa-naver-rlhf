@@ -586,6 +586,7 @@ async def do_auth_user(user_id: str, token: str):
             await session.rollback()
             raise e
 
+
 async def do_get_persona_image_infos(
     user_id: str = "kb"
 ):
@@ -638,14 +639,15 @@ async def do_get_persona_image_infos(
                 if not keyword_image_url.image_url:
                     return None
 
-            update_stmt = (
-                update(Persona)
-                .where(Persona.id == persona.id)
-                .values(used_by=user_id)
-            )
+            if user_id not in ["admin"]:
+                update_stmt = (
+                    update(Persona)
+                    .where(Persona.id == persona.id)
+                    .values(used_by=user_id)
+                )
 
-            await session.execute(update_stmt)
-            await session.commit()
+                await session.execute(update_stmt)
+                await session.commit()
 
             image_infos = [
                 {"keyword": ki.keyword, "image_url": ki.image_url}
