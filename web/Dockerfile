@@ -1,4 +1,4 @@
-FROM python:3.8.13 as builder-base
+FROM python:3.11.10 as builder-base
 
 RUN apt-get update -y && curl -sSL https://install.python-poetry.org | POETRY_VERSION=1.8.4 python3 -
 
