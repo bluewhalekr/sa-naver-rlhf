@@ -18,6 +18,8 @@ from services import (
     do_auth_user,
     do_get_persona_image_infos,
     generate_and_get_image_questions,
+    do_get_prompt,
+    do_set_prompt,
 )
 
 logger.remove()  # 기본 핸들러 제거
@@ -114,6 +116,19 @@ async def generate_image_questions(req: ImageQuestionsRequest):
             detail=f"GPT Assistant response error: {e}"
         )
     return result
+
+
+@app.get("/v3/prompts/{question_type}")
+async def get_prompt(question_type: str):
+    """Get prompt"""
+    result = await do_get_prompt(question_type)
+    return result
+
+
+@app.post("/v3/prompts/{question_type}")
+async def set_prompt(question_type: str, req: PromptSetRequest):
+    """Set prompt"""
+    await do_set_prompt(question_type, req.prompt)
 
 
 @app.on_event("startup")

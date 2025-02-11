@@ -24,6 +24,7 @@ from db_config import (
     Question,
     Token,
     Persona,
+    Prompt,
     KeywordImageURL,
     async_session_scope,
     db_manager,
@@ -664,7 +665,7 @@ async def do_get_persona_image_infos(
 
 
 async def generate_and_get_image_questions(
-    user_id: str, persona: str, choices: List, question_type: str
+    user_id: str, persona: str, choices: List, prompt: str
 ):
     """이미지 선택지를 받아 질문을 생성하고 반환하는 함수"""
     question_generator = QuestionGenerator()
@@ -693,3 +694,39 @@ async def generate_and_get_image_questions(
         raise GptAssistantResponseError
 
     return {'questions': questions}
+
+
+async def do_get_prompt(
+        question_type: str
+):
+    """질문 유형과 태그를 입력받아 프롬프트를 반환하는 함수"""
+    session_factory = db_manager.get_session_factory()
+    async with async_session_scope(session_factory) as session:
+        try:
+            # get latest prompt
+            query = select(Prompt).where(Prompt.question_type == question_type).order_by(Prompt.updated_at.desc()).limit(1)
+            result = await session.execute(query)
+            prompt = result.scalar_one_or_none()
+
+            return {"prompt": prompt.prompt}
+
+        except SQLAlchemyError as e:
+            await session.rollback()
+            raise e
+
+
+async  def do_set_prompt(
+        question_type: str, new_prompt: str
+):
+    """질문 유형과 태그를 입력받아 프롬프트를 설정하는 함수"""
+    session_factory = db_manager.get_session_factory()
+    async with async_session_scope(session_factory) as session:
+        try:
+            new_prompt = Prompt(question_type=question_type, prompt=new_prompt)
+            session.add(new_prompt)
+
+            await session.commit()
+
+        except SQLAlchemyError as e:
+            await session.rollback()
+            raise e

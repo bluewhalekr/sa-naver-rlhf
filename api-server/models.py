@@ -70,7 +70,14 @@ class ImageQuestionsRequest(BaseModel):
     user_id: str
     persona: str
     choices: List[ImageInfo]
-    question_type: str
+    prompt: str
+
+    class Config:
+        from_attributes = True
+
+
+class PromptSetRequest(BaseModel):
+    prompt: str
 
     class Config:
         from_attributes = True
