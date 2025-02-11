@@ -8,6 +8,7 @@ from typing import List, Optional
 import openai
 from openai.types import CompletionUsage
 from pydantic import BaseModel
+from pydantic_core import ValidationError as PydanticValidationError
 
 from config import AZURE_ENDPOINT, OPENAI_API_KEY, OPENAI_API_VERSION
 
