@@ -5,8 +5,7 @@ from typing import List
 from gpt_assistant import GptBatchAssistant, to_user_message
 from prompts.v3 import PERSONA_USER_PROMPT, PersonaAndSearchKeywords, \
     PERSONA_DESCRIPTION_USER_PROMPT, IMAGES_GUIDE_PROMPT, IMAGE_TAG_PROMPT, \
-    SM_TYPE_QUESTION_GEN_USER_PROMPT, MS_TYPE_QUESTION_GEN_USER_PROMPT, MM_1_TYPE_QUESTION_GEN_USER_PROMPT, \
-    MM_2_TYPE_QUESTION_GEN_USER_PROMPT, ImageQueries
+    ImageQueries
 
 GPT_MODEL = "gpt-4o"
 GPT_INPUT_PRICE = 2.5 * 0.000001
@@ -36,9 +35,12 @@ class PersonaGenerator:
         persona_keywords_sets = []
         for result in results:
             if content := result.contents[0]:
-                json_content = json.loads(content)
-                json_content["가격"] = result.prices.input_price + result.prices.output_price
-                persona_keywords_sets.append(json_content)
+                try:
+                    json_content = json.loads(content)
+                    json_content["가격"] = result.prices.input_price + result.prices.output_price
+                    persona_keywords_sets.append(json_content)
+                except json.JSONDecodeError:
+                    pass
 
         return persona_keywords_sets
 
@@ -47,19 +49,7 @@ class QuestionGenerator:
     def __init__(self):
         self.assistant = GptBatchAssistant()
 
-    def get_instruction_prompt(self, question_type: str):
-        if question_type == "SM":
-            return SM_TYPE_QUESTION_GEN_USER_PROMPT
-        elif question_type == "MS":
-            return MS_TYPE_QUESTION_GEN_USER_PROMPT
-        elif question_type == "MM-1":
-            return MM_1_TYPE_QUESTION_GEN_USER_PROMPT
-        elif question_type == "MM-2":
-            return MM_2_TYPE_QUESTION_GEN_USER_PROMPT
-        else:
-            raise ValueError(f"Invalid question type: {question_type}")
-
-    async def execute(self, persona: str, image_infos: List, question_type: str):
+    async def execute(self, persona: str, image_infos: List, instruction_prompt: str):
         user_messages = []
 
         persona_prompt = PERSONA_DESCRIPTION_USER_PROMPT
@@ -77,9 +67,8 @@ class QuestionGenerator:
             image_message = to_user_message(image_prompt, [image_info.image_url])
             user_messages.append(image_message)
 
-        instruction_prompt = self.get_instruction_prompt(question_type)
         user_message = to_user_message(instruction_prompt)
         user_messages.append(user_message)
 
         response = self.assistant.structured_chat(user_messages, response_format=ImageQueries)
-        return response.json()
+        return response
