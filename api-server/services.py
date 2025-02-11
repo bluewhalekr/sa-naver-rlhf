@@ -6,6 +6,8 @@ import random
 import time
 from concurrent.futures import ThreadPoolExecutor
 from typing import List, Set
+from pydantic import ValidationError as PydanticValidationError
+from errors import GptAssistantResponseError, NoAvailablePersonaImageInfoError
 
 from config import CRAWLING_IMAGE_BATCH_SIZE, QUESTION_COUNT_BUFFER
 from crawling import crawl_image_urls_by_keyword
@@ -623,7 +625,7 @@ async def do_get_persona_image_infos(
             persona = result.scalar_one_or_none()
 
             if not persona:
-                return None
+                raise NoAvailablePersonaImageInfoError()
 
             keyword_image_url_query = (
                 select(KeywordImageURL)
@@ -633,11 +635,11 @@ async def do_get_persona_image_infos(
             keyword_image_urls = result.scalars().all()
 
             if not keyword_image_urls:
-                return None
+                raise NoAvailablePersonaImageInfoError()
 
             for keyword_image_url in keyword_image_urls:
                 if not keyword_image_url.image_url:
-                    return None
+                    raise NoAvailablePersonaImageInfoError()
 
             if user_id not in ["admin"]:
                 update_stmt = (
@@ -666,20 +668,28 @@ async def generate_and_get_image_questions(
 ):
     """이미지 선택지를 받아 질문을 생성하고 반환하는 함수"""
     question_generator = QuestionGenerator()
-    assistant_response = await question_generator.execute(persona, choices, question_type)
-    result = json.loads(assistant_response)["contents"][0]
+    try:
+        assistant_response = await question_generator.execute(persona, choices, prompt)
+    except PydanticValidationError as e:
+        raise GptAssistantResponseError
+
+    result = assistant_response.contents[0]
 
     keyword_to_image_url = {choice.keyword: choice.image_url for choice in choices}
 
     questions = []
-    for d in list(result.values()):
-        keywords = d["첨부할_이미지의_검색어"]
-        image_infos = [{"keyword": keyword, "image_url": keyword_to_image_url[keyword]} for keyword in keywords]
+    try:
+        for d in list(result.values()):
+            keywords = d["첨부할_이미지의_검색어"]
+            image_infos = [{"keyword": keyword, "image_url": keyword_to_image_url[keyword]} for keyword in keywords]
 
-        question = {
-            "question": d["사용자_질문"],
-            "image_infos": image_infos
-        }
-        questions.append(question)
+            question = {
+                "question": d["사용자_질문"],
+                "image_infos": image_infos
+            }
+            questions.append(question)
+    except KeyError as e:
+        logger.error(f"KeyError occurred: {str(e)}")
+        raise GptAssistantResponseError
 
     return {'questions': questions}

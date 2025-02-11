@@ -93,18 +93,24 @@ class GptAssistant:
         )
 
     def structured_chat(self, messages, response_format, n=1, temperature=1.0):
-        result = self.openai_client.beta.chat.completions.parse(
-            model=GPT_MODEL,
-            messages=messages,
-            response_format=response_format,
-            temperature=temperature,
-            n=n,
-        )
+        try:
+            result = self.openai_client.beta.chat.completions.parse(
+                model=GPT_MODEL,
+                messages=messages,
+                response_format=response_format,
+                temperature=temperature,
+                n=n,
+            )
+        except PydanticValidationError as e:
+            raise e
 
         assistant_price = self.get_usage_price(result.usage)
-        response_contents = [
-            json.loads(choice.message.content) for choice in result.choices
-        ]
+        try:
+            response_contents = [
+                json.loads(choice.message.content) for choice in result.choices
+            ]
+        except json.JSONDecodeError as e:
+            raise e
 
         return AssistantResponse(
             contents=response_contents,

@@ -2,11 +2,14 @@
 
 import sys
 
+from fastapi import BackgroundTasks, Depends, FastAPI, Request, HTTPException
+from loguru import logger
+from starlette.status import HTTP_500_INTERNAL_SERVER_ERROR
+
 from auth import verify_admin_user, verify_user
 from db_config import db_manager
-from fastapi import BackgroundTasks, Depends, FastAPI, Request
-from loguru import logger
-from models import KeywordsRequest, AuthRequest, ImageQuestionsRequest
+from errors import GptAssistantResponseError, NoAvailablePersonaImageInfoError
+from models import KeywordsRequest, AuthRequest, ImageQuestionsRequest, PromptSetRequest
 from services import (
     do_create_batch_questions,
     do_create_keywords_images,
@@ -85,19 +88,31 @@ async def auth_user(req: AuthRequest):
 @app.get("/v3/persona-image-infos")
 async def get_persona_image_infos(user_id: str):
     """Get persona image infos"""
-    result = await do_get_persona_image_infos(user_id)
+    try:
+        result = await do_get_persona_image_infos(user_id)
+    except NoAvailablePersonaImageInfoError as e:
+        raise HTTPException(
+            status_code=HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"NoAvailablePersonaImageInfoError: {e}"
+        )
     return result
 
 
 @app.post("/v3/image-questions")
 async def generate_image_questions(req: ImageQuestionsRequest):
     """Generate image questions"""
-    result = await generate_and_get_image_questions(
-        req.user_id,
-        req.persona,
-        req.choices,
-        req.question_type
-    )
+    try:
+        result = await generate_and_get_image_questions(
+            req.user_id,
+            req.persona,
+            req.choices,
+            req.prompt
+        )
+    except GptAssistantResponseError as e:
+        raise HTTPException(
+            status_code=HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"GPT Assistant response error: {e}"
+        )
     return result
 
 
