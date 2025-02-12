@@ -715,7 +715,7 @@ async def do_get_prompt(
             raise e
 
 
-async  def do_set_prompt(
+async def do_set_prompt(
         question_type: str, new_prompt: str
 ):
     """질문 유형과 태그를 입력받아 프롬프트를 설정하는 함수"""
