@@ -616,36 +616,40 @@ async def do_get_persona_image_infos(
             # 만약 하나라도 image_url이 비어있는 경우, 다른 persona를 선택하여 다시 시도
             # 모든 image_url이 존재하는 경우, 해당 persona의 used_by를 user_id로 업데이트
             # 결과를 요청된 형식으로 구성하여 반환
+
+            subq = (
+                select(KeywordImageURL.persona_id)
+                .group_by(KeywordImageURL.persona_id)
+                .having(func.count(KeywordImageURL.image_url) == 6)
+            )
+
             persona_query = (
                 select(Persona)
-                .where(Persona.used_by == None)
+                .filter(
+                    Persona.used_by.is_(None),
+                    Persona.id.in_(subq)
+                )
                 .order_by(func.random())
                 .limit(1)
             )
+
             result = await session.execute(persona_query)
-            persona = result.scalar_one_or_none()
+            selected_persona = result.scalar_one_or_none()
 
-            if not persona:
-                raise NoAvailablePersonaImageInfoError()
+            if not selected_persona:
+                raise NoAvailablePersonaImageInfoError
 
-            keyword_image_url_query = (
-                select(KeywordImageURL)
-                .where(KeywordImageURL.persona_id == persona.id)
+            image_url_query = (
+                select(KeywordImageURL.keyword, KeywordImageURL.image_url)
+                .filter(KeywordImageURL.persona_id == selected_persona.id)
             )
-            result = await session.execute(keyword_image_url_query)
-            keyword_image_urls = result.scalars().all()
-
-            if not keyword_image_urls:
-                raise NoAvailablePersonaImageInfoError()
-
-            for keyword_image_url in keyword_image_urls:
-                if not keyword_image_url.image_url:
-                    raise NoAvailablePersonaImageInfoError()
+            result = await session.execute(image_url_query)
+            keyword_image_urls = result.fetchall()
 
             if user_id not in ["admin"]:
                 update_stmt = (
                     update(Persona)
-                    .where(Persona.id == persona.id)
+                    .where(Persona.id == selected_persona.id)
                     .values(used_by=user_id)
                 )
 
@@ -657,7 +661,7 @@ async def do_get_persona_image_infos(
                 for ki in keyword_image_urls
             ]
 
-            return {"persona": persona.persona, "image_infos": image_infos}
+            return {"persona": selected_persona.persona, "image_infos": image_infos}
 
         except SQLAlchemyError as e:
             await session.rollback()
