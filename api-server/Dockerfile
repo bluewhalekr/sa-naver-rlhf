@@ -20,7 +20,7 @@ RUN pip install uv && \
     uvicorn==0.32.0 \
     asyncpg==0.29.0 \
     greenlet==3.1.1 \
-    openai==1.51.2 \
+    openai==1.59.7 \
     tqdm==4.62.3 \
     apscheduler==3.10.4
 
