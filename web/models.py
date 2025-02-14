@@ -35,19 +35,23 @@ class ImageQuestionsRequestData(BaseModel):
     user_id: str
     persona: str
     choices: List[ImageUrlInfo]
-    question_type: str
+    prompt: str
 
 
 class ImageQuestionsResponse(BaseModel):
     questions: List[ImageQuestion]
 
 
-# 프롬프트 적용 요청 API 모델
-class PromptRequest(BaseModel):
-    question_type: Literal["SM", "MS", "MM"]
+# 프롬프트 get 응답 API 모델
+class PromptGetResponse(BaseModel):
     prompt: str
 
 
-# 프롬프트 적용 응답 API 모델
-class PromptResponse(BaseModel):
+# 프롬프트 set 요청 API 모델
+class PromptSetRequest(BaseModel):
+    prompt: str
+
+
+# 프롬프트 set 응답 API 모델
+class PromptSetResponse(BaseModel):
     status: str

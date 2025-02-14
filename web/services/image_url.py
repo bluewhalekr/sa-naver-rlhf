@@ -1,5 +1,5 @@
-from typing import List
-
+from typing import Optional
+import httpx
 from config import IMAGE_URL_API_URL, TEST_MODE
 from logger import logger
 from models import ImageUrlInfo, ImageUrlInfosRequestData, ImageUrlInfosResponse
@@ -36,7 +36,7 @@ MOCK_IMAGE_URL_INFOS = {
 }
 
 
-def request_persona_image_infos(username: str) -> ImageUrlInfosResponse:
+def request_persona_image_infos(username: str) -> Optional[ImageUrlInfosResponse]:
     logger.info(f"{username.rjust(12)}| request_image_urls")
 
     if TEST_MODE:
@@ -46,11 +46,18 @@ def request_persona_image_infos(username: str) -> ImageUrlInfosResponse:
         api_client = ApiClient()
 
         req_data = ImageUrlInfosRequestData(user_id=username)
-        json_response = api_client.get(IMAGE_URL_API_URL, params=req_data.dict())
+        try:
+            json_response = api_client.get(IMAGE_URL_API_URL, params=req_data.dict())
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 500 and 'NoAvailablePersonaImageInfoError' in e.response.content.decode():
+                logger.error("No available persona image info")
+                return None
+            else:
+                raise e
 
     return ImageUrlInfosResponse(**json_response)
 
 
-def get_persona_image_infos(username) -> List[ImageUrlInfo]:
+def get_persona_image_infos(username) -> Optional[ImageUrlInfosResponse]:
     response = request_persona_image_infos(username)
     return response

@@ -38,3 +38,13 @@ class ApiClient:
         except httpx.HTTPStatusError as e:
             logger.error(f"An error occurred: {e}")
             raise e
+
+    def put(self, url, data=None):
+        try:
+            response = self.client.put(url, json=data, timeout=30)
+            response.raise_for_status()
+            return response.json()
+
+        except httpx.HTTPStatusError as e:
+            logger.error(f"An error occurred: {e}")
+            raise e
