@@ -2,16 +2,24 @@
 
 import sys
 
+from fastapi import BackgroundTasks, Depends, FastAPI, Request, HTTPException
+from loguru import logger
+from starlette.status import HTTP_500_INTERNAL_SERVER_ERROR
+
 from auth import verify_admin_user, verify_user
 from db_config import db_manager
-from fastapi import BackgroundTasks, Depends, FastAPI, Request
-from loguru import logger
-from models import KeywordsRequest
+from errors import GptAssistantResponseError, NoAvailablePersonaImageInfoError
+from models import KeywordsRequest, AuthRequest, ImageQuestionsRequest, PromptSetRequest
 from services import (
     do_create_batch_questions,
     do_create_keywords_images,
     do_get_questions,
     do_get_questions_v2,
+    do_auth_user,
+    do_get_persona_image_infos,
+    generate_and_get_image_questions,
+    do_get_prompt,
+    do_set_prompt,
 )
 
 logger.remove()  # 기본 핸들러 제거
@@ -70,6 +78,57 @@ async def get_questions_v2(token: str = Depends(verify_user)):
     """Get questions"""
     result = await do_get_questions_v2(token)
     return result
+
+
+@app.post("/v3/auth")
+async def auth_user(req: AuthRequest):
+    """Authenticate user"""
+    result = await do_auth_user(req.user_id, req.token)
+    return result
+
+
+@app.get("/v3/persona-image-infos")
+async def get_persona_image_infos(user_id: str):
+    """Get persona image infos"""
+    try:
+        result = await do_get_persona_image_infos(user_id)
+    except NoAvailablePersonaImageInfoError as e:
+        raise HTTPException(
+            status_code=HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"NoAvailablePersonaImageInfoError: {e}"
+        )
+    return result
+
+
+@app.post("/v3/image-questions")
+async def generate_image_questions(req: ImageQuestionsRequest):
+    """Generate image questions"""
+    try:
+        result = await generate_and_get_image_questions(
+            req.user_id,
+            req.persona,
+            req.choices,
+            req.prompt
+        )
+    except GptAssistantResponseError as e:
+        raise HTTPException(
+            status_code=HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"GPT Assistant response error: {e}"
+        )
+    return result
+
+
+@app.get("/v3/prompts/{question_type}")
+async def get_prompt(question_type: str):
+    """Get prompt"""
+    result = await do_get_prompt(question_type)
+    return result
+
+
+@app.post("/v3/prompts/{question_type}")
+async def set_prompt(question_type: str, req: PromptSetRequest):
+    """Set prompt"""
+    await do_set_prompt(question_type, req.prompt)
 
 
 @app.on_event("startup")

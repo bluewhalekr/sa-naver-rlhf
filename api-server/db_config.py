@@ -14,8 +14,10 @@ from sqlalchemy import (
     Integer,
     String,
     UniqueConstraint,
+    TIMESTAMP,
+    func
 )
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
 
@@ -51,9 +53,29 @@ class ImageURL(Base):
 
 class Persona(Base):
     __tablename__ = "personas"
-    __table_args__ = {"schema": "naver_rlhf_v2"}
+    __table_args__ = {"schema": "naver_rlhf_v3"}
     id = Column(Integer, primary_key=True, index=True)
     persona = Column(String)
+    used_by = Column(String)
+
+
+class KeywordImageURL(Base):
+    __tablename__ = "image_urls"
+    __table_args__ = {"schema": "naver_rlhf_v3"}
+    id = Column(Integer, primary_key=True, index=True)
+    persona_id = Column(Integer, ForeignKey("personas.id"))
+    keyword = Column(String)
+    image_url = Column(String)
+
+
+class Prompt(Base):
+    __tablename__ = "prompts"
+    __table_args__ = {"schema": "naver_rlhf_v3"}
+    id = Column(Integer, primary_key=True, index=True)
+    question_type = Column(String)
+    tag = Column(String, nullable=True)
+    prompt = Column(String)
+    updated_at = Column(TIMESTAMP, server_default=func.now(), onupdate=func.current_timestamp())
 
 
 class KeywordImageURLSet(Base):
@@ -147,7 +169,7 @@ class AsyncDatabaseManager:
                 "server_settings": {"client_encoding": "utf8"},
             },
         )
-        self.SessionFactory = sessionmaker(
+        self.SessionFactory = async_sessionmaker(
             self.engine, class_=AsyncSession, expire_on_commit=False
         )
 

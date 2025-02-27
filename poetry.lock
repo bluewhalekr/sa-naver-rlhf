@@ -692,17 +692,6 @@ files = [
 ]
 
 [[package]]
-name = "funcy"
-version = "2.0"
-description = "A fancy and practical functional tools"
-optional = false
-python-versions = "*"
-files = [
-    {file = "funcy-2.0-py2.py3-none-any.whl", hash = "sha256:53df23c8bb1651b12f095df764bfb057935d49537a56de211b098f4c79614bb0"},
-    {file = "funcy-2.0.tar.gz", hash = "sha256:3963315d59d41c6f30c04bc910e10ab50a3ac4a225868bfa96feed133df075cb"},
-]
-
-[[package]]
 name = "gitdb"
 version = "4.0.12"
 description = "Git Object Database"
@@ -3657,4 +3646,4 @@ h11 = ">=0.9.0,<1"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "6356418a818753b3905d31d30d034da38ea86f1926977a576dc8994cc7196d27"
+content-hash = "cb3b9d5418ea446c533bd3fef7cbe913270ea78c6d6ce5fe170f716d1a8fd2de"

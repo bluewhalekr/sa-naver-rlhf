@@ -27,7 +27,7 @@ class Intent(BaseModel):
     used_by: Optional[int] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class KeywordImageURLSet(BaseModel):
@@ -37,7 +37,7 @@ class KeywordImageURLSet(BaseModel):
     intent_id: Optional[int] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class Persona(BaseModel):
@@ -45,7 +45,7 @@ class Persona(BaseModel):
     persona: Optional[str] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class Query(BaseModel):
@@ -55,4 +55,29 @@ class Query(BaseModel):
     intent_id: Optional[int] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
+
+
+class AuthRequest(BaseModel):
+    user_id: str
+    token: str
+
+    class Config:
+        from_attributes = True
+
+
+class ImageQuestionsRequest(BaseModel):
+    user_id: str
+    persona: str
+    choices: List[ImageInfo]
+    prompt: str
+
+    class Config:
+        from_attributes = True
+
+
+class PromptSetRequest(BaseModel):
+    prompt: str
+
+    class Config:
+        from_attributes = True
