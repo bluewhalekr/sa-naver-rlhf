@@ -8,6 +8,7 @@ WORKDIR /root/sa_naver_rlhf
 COPY pyproject.toml poetry.lock* ./
 
 RUN poetry config virtualenvs.create false && poetry lock --no-update
+RUN poetry cache clear --all pypi
 RUN poetry install
 
 # 최종 애플리케이션 빌드 스테이지
