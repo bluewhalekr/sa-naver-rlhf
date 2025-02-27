@@ -17,5 +17,6 @@ BASE_API_URL = "https://task1.smart-agent.bluewhale.kr"
 AUTH_API_URL = f"{BASE_API_URL}/v3/auth"
 IMAGE_URL_API_URL = f"{BASE_API_URL}/v3/persona-image-infos"
 QUESTION_API_URL = f"{BASE_API_URL}/v3/image-questions"
+PROMPT_API_URL = f"{BASE_API_URL}/v3/prompts"
 
 BTN_WAITING_TIME = 10

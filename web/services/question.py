@@ -1,6 +1,7 @@
 import time
 from datetime import timedelta
 from typing import List
+from httpx import HTTPStatusError
 
 import streamlit as st
 
@@ -65,16 +66,25 @@ def request_questions(req_data: dict):
 
     else:
         api_client = ApiClient()
-        json_response = api_client.post(QUESTION_API_URL, data=req_data)
+        try:
+            json_response = api_client.post(QUESTION_API_URL, data=req_data)
+        except HTTPStatusError as e:
+            if e.response.status_code == 500 and 'GptAssistantResponseError' in e.response.content.decode():
+                logger.error("No available persona image info")
+                return None
+            else:
+                raise e
 
     return json_response
 
 
-def get_questions(persona: str, choices: List[ImageUrlInfo], question_type: str, username: str) -> List[ImageQuestion]:
+def get_questions(persona: str, choices: List[ImageUrlInfo], prompt: str, username: str) -> List[ImageQuestion]:
     keyword_to_image_url = {choice.keyword: choice.image_url for choice in choices}
 
-    req_data = ImageQuestionsRequestData(user_id=username, persona=persona, choices=choices, question_type=question_type)
-    json_response = request_questions(req_data.dict())
-    response = ImageQuestionsResponse(**json_response)
+    req_data = ImageQuestionsRequestData(user_id=username, persona=persona, choices=choices, prompt=prompt)
+    if json_response := request_questions(req_data.dict()):
+        response = ImageQuestionsResponse(**json_response)
 
-    return response.questions
+        return response.questions
+
+    return []

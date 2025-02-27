@@ -3,6 +3,7 @@ import streamlit as st
 from logger import logger
 from services.image_url import get_persona_image_infos
 from services.question import get_questions
+from services.prompt import get_prompt, set_prompt
 from streamlit_utils import image_show, lazy_button, logo_fragment
 
 
@@ -10,16 +11,49 @@ from streamlit_utils import image_show, lazy_button, logo_fragment
 def question_type_checkbox():
     logo_fragment()
 
-    question_type = st.radio("질문 유형", ["SM", "MS", "MM-1", "MM-2"], horizontal=True)
-    return question_type
+    question_type = st.radio("질문 유형", ["SM", "MS", "MM_1", "MM_2"], horizontal=True)
+
+    prompt = get_prompt(question_type)
+    if st.session_state['username'] == 'admin':
+        persona = st.session_state['persona']
+        st.caption("페르소나:")
+        st.json(persona)
+        prompt = prompt_edit_view(prompt, question_type)
+
+    return question_type, prompt
 
 
 @st.fragment
-def questions_view(choices, question_type):
+def prompt_edit_view(default_prompt, question_type):
+    logo_fragment()
+
+    prompt = st.text_area("프롬프트", default_prompt, height=300)
+    btn_cols = st.columns(2)
+    if btn_cols[0].button("적용하기", use_container_width=True):
+        st.rerun(scope="fragment")
+
+    if btn_cols[1].button("저장하기", use_container_width=True):
+        try:
+            set_prompt(question_type, prompt)
+            st.success("프롬프트가 저장되었습니다.")
+        except Exception as e:
+            logger.error(f"prompt set error: {e}")
+            st.error("프롬프트 저장에 실패했습니다.")
+            return
+
+    return prompt
+
+
+@st.fragment
+def questions_view(choices, prompt):
     username = st.session_state['username']
     persona = st.session_state['persona']
     with st.spinner("질문을 가져오는 중..."):
-        questions = get_questions(persona, choices, question_type, username)
+        questions = get_questions(persona, choices, prompt, username)
+
+    if not questions:
+        st.error("질문을 생성하는 데 실패했습니다. 다시 시도해주세요.")
+        return
 
     for image_question in questions:
         with st.chat_message("user"):
@@ -64,11 +98,11 @@ def image_choice_view(image_url_infos):
                     choices.append(image_url_info)
 
     if 3 <= len(choices) <= 5:
-        question_type = question_type_checkbox()
+        question_type, prompt = question_type_checkbox()
 
         if st.button("질문 생성하기", use_container_width=True):
             logger.info(f"{username.rjust(12)}| question button clicked")
-            questions_view(choices, question_type)
+            questions_view(choices, prompt)
 
     else:
         st.info("3개 이상 5개 이하의 이미지를 선택해주세요.")
@@ -80,6 +114,10 @@ def image_button_click_action():
 
     username = st.session_state['username']
     persona_image_infos = get_persona_image_infos(username)
+
+    if persona_image_infos is None:
+        st.error("이미지와 질문을 가져오는 데 실패했습니다.")
+        return
     st.session_state['persona'] = persona_image_infos.persona
     image_choice_view(persona_image_infos.image_infos)
 
